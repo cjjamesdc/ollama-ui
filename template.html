@@ -1,0 +1,515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ollama GUI</title>
+    <link rel="stylesheet" href="design-system.css">
+    
+    <!-- Optional: Syntax highlighting -->
+    <!-- <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css"> -->
+    
+    <style>
+        /* Layout-specific styles */
+        .container {
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* SIDEBAR */
+        .sidebar {
+            width: 280px;
+            background-color: var(--bg-secondary);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            padding: var(--space-lg);
+        }
+
+        .logo {
+            font-size: var(--font-xl);
+            font-weight: 600;
+            margin-bottom: var(--space-xl);
+            display: flex;
+            align-items: center;
+            gap: var(--space-md);
+        }
+
+        .logo-icon {
+            width: 32px;
+            height: 32px;
+            background: var(--accent-primary);
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: var(--bg-primary);
+            font-weight: bold;
+        }
+
+        .new-chat-btn {
+            width: 100%;
+            margin-bottom: var(--space-lg);
+        }
+
+        .model-selector {
+            margin-bottom: var(--space-lg);
+        }
+
+        .model-selector label {
+            display: block;
+            font-size: var(--font-xs);
+            text-transform: uppercase;
+            color: var(--text-tertiary);
+            margin-bottom: var(--space-sm);
+            font-weight: 500;
+            letter-spacing: 0.5px;
+        }
+
+        .chat-history {
+            flex: 1;
+            overflow-y: auto;
+            margin-bottom: var(--space-lg);
+        }
+
+        .chat-item {
+            padding: var(--space-sm) var(--space-md);
+            margin-bottom: var(--space-xs);
+            border-radius: var(--radius-md);
+            color: var(--text-secondary);
+            font-size: var(--font-sm);
+            cursor: pointer;
+            transition: background-color var(--transition-normal);
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .chat-item:hover {
+            background-color: var(--bg-tertiary);
+        }
+
+        .chat-item.active {
+            background-color: var(--bg-tertiary);
+            color: var(--text-primary);
+        }
+
+        /* MAIN CONTENT */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chat-header {
+            padding: var(--space-lg) var(--space-xl);
+            background-color: var(--bg-secondary);
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .chat-title {
+            font-size: var(--font-lg);
+            font-weight: 500;
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: var(--space-xl);
+        }
+
+        /* INPUT AREA */
+        .chat-input-container {
+            padding: var(--space-lg) var(--space-xl);
+            background-color: var(--bg-secondary);
+            border-top: 1px solid var(--border);
+        }
+
+        .chat-input-wrapper {
+            max-width: 900px;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        .chat-input {
+            width: 100%;
+            padding: var(--space-md) 80px var(--space-md) var(--space-md);
+            max-height: 200px;
+        }
+
+        .input-actions {
+            position: absolute;
+            right: var(--space-md);
+            bottom: var(--space-md);
+            display: flex;
+            gap: var(--space-sm);
+            align-items: center;
+        }
+
+        .token-counter {
+            font-size: var(--font-xs);
+            color: var(--text-tertiary);
+            font-family: var(--font-mono);
+            padding: 4px 8px;
+            background-color: var(--bg-tertiary);
+            border-radius: var(--radius-sm);
+        }
+
+        .send-btn {
+            width: 40px;
+            height: 40px;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* SYSTEM PROMPT EDITOR */
+        .system-prompt-container {
+            margin-bottom: var(--space-md);
+        }
+
+        .system-prompt-toggle {
+            width: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: var(--space-sm) var(--space-md);
+            background-color: var(--bg-tertiary);
+            border: none;
+            border-radius: var(--radius-md);
+            color: var(--text-secondary);
+            font-size: var(--font-sm);
+            font-weight: 500;
+            cursor: pointer;
+            transition: all var(--transition-normal);
+        }
+
+        .system-prompt-toggle:hover {
+            background-color: var(--accent-light);
+            color: var(--text-primary);
+        }
+
+        .toggle-icon {
+            transition: transform var(--transition-normal);
+        }
+
+        .system-prompt-toggle.active .toggle-icon {
+            transform: rotate(180deg);
+        }
+
+        .system-prompt-editor {
+            margin-top: var(--space-sm);
+            padding: var(--space-md);
+            background-color: var(--bg-tertiary);
+            border-radius: var(--radius-md);
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height var(--transition-slow);
+        }
+
+        .system-prompt-editor.active {
+            max-height: 400px;
+        }
+
+        .system-prompt-input {
+            width: 100%;
+            min-height: 100px;
+            margin-bottom: var(--space-md);
+        }
+
+        .system-prompt-actions {
+            display: flex;
+            gap: var(--space-sm);
+            justify-content: flex-end;
+        }
+
+        /* SETTINGS SECTION */
+        .settings-section {
+            margin-bottom: var(--space-xl);
+        }
+
+        .settings-section h3 {
+            font-size: var(--font-md);
+            font-weight: 600;
+            margin-bottom: var(--space-md);
+            color: var(--text-primary);
+            padding-bottom: var(--space-sm);
+            border-bottom: 1px solid var(--border);
+        }
+
+        /* RESPONSIVE */
+        @media (max-width: 768px) {
+            .sidebar {
+                position: fixed;
+                left: -280px;
+                top: 0;
+                height: 100vh;
+                z-index: 100;
+                transition: left var(--transition-slow);
+            }
+
+            .sidebar.active {
+                left: 0;
+            }
+
+            .container {
+                flex-direction: column;
+            }
+        }
+    </style>
+</head>
+<body data-theme="light">
+    <div class="container">
+        <!-- SIDEBAR -->
+        <aside class="sidebar">
+            <div class="logo">
+                <div class="logo-icon">O</div>
+                <span>Ollama</span>
+            </div>
+
+            <button class="btn btn-primary new-chat-btn" id="newChatBtn">
+                + New Chat
+            </button>
+
+            <!-- MODEL SELECTOR -->
+            <div class="model-selector">
+                <label>Model</label>
+                <select class="input" id="modelSelect">
+                    <!-- CLAUDE CODE: Populate this with available models -->
+                    <option value="llama3.2:3b">llama3.2:3b</option>
+                    <option value="mistral:7b">mistral:7b</option>
+                    <option value="codellama:13b">codellama:13b</option>
+                    <option value="phi3:mini">phi3:mini</option>
+                </select>
+            </div>
+
+            <!-- CHAT HISTORY -->
+            <div class="chat-history" id="chatHistory">
+                <!-- CLAUDE CODE: Dynamically populate chat history -->
+                <div class="chat-item active">New Chat</div>
+            </div>
+
+            <!-- THEME TOGGLE -->
+            <button class="btn btn-ghost" id="themeToggle" style="justify-content: center;">
+                <span id="themeIcon">🌙</span>
+                <span id="themeText" style="margin-left: 8px;">Dark Mode</span>
+            </button>
+        </aside>
+
+        <!-- MAIN CONTENT -->
+        <main class="main-content">
+            <!-- HEADER -->
+            <div class="chat-header">
+                <h1 class="chat-title" id="chatTitle">New Chat</h1>
+                <div class="header-actions">
+                    <button class="icon-btn" id="exportBtn" title="Export chat">📤</button>
+                    <button class="icon-btn" id="settingsBtn" title="Settings">⚙️</button>
+                    <div class="badge badge-success" id="statusBadge">
+                        ● Connected
+                    </div>
+                </div>
+            </div>
+
+            <!-- MESSAGES -->
+            <div class="chat-messages" id="chatMessages">
+                <!-- CLAUDE CODE: Messages will be dynamically inserted here -->
+                
+                <!-- Example user message structure:
+                <div class="message user">
+                    <div class="message-avatar">U</div>
+                    <div class="message-content">
+                        <div class="message-role">You</div>
+                        <div class="message-text">
+                            Your message here
+                        </div>
+                    </div>
+                </div>
+                -->
+
+                <!-- Example AI message structure:
+                <div class="message ai">
+                    <div class="message-avatar">A</div>
+                    <div class="message-content">
+                        <div class="message-role">Assistant</div>
+                        <div class="message-text">
+                            AI response here
+                        </div>
+                    </div>
+                </div>
+                -->
+            </div>
+
+            <!-- INPUT AREA -->
+            <div class="chat-input-container">
+                <!-- SYSTEM PROMPT EDITOR (Collapsible) -->
+                <div class="system-prompt-container">
+                    <button class="system-prompt-toggle" id="systemPromptToggle">
+                        <span>System Prompt</span>
+                        <span class="toggle-icon">▼</span>
+                    </button>
+                    <div class="system-prompt-editor" id="systemPromptEditor">
+                        <textarea 
+                            class="input system-prompt-input" 
+                            id="systemPromptInput"
+                            placeholder="You are a helpful assistant..."
+                        >You are a helpful assistant.</textarea>
+                        <div class="system-prompt-actions">
+                            <button class="btn btn-secondary" id="resetPromptBtn">Reset</button>
+                            <button class="btn btn-primary" id="applyPromptBtn">Apply</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CHAT INPUT -->
+                <div class="chat-input-wrapper">
+                    <textarea 
+                        class="input chat-input" 
+                        id="chatInput"
+                        placeholder="Ask Ollama anything..."
+                        rows="1"
+                    ></textarea>
+                    <div class="input-actions">
+                        <!-- CLAUDE CODE: Token counter already exists in your app -->
+                        <span class="token-counter" id="tokenCounter">0 tokens</span>
+                        <button class="btn btn-primary send-btn" id="sendBtn">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- SETTINGS MODAL -->
+    <div class="modal" id="settingsModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Settings</h2>
+                <button class="close-btn" id="closeSettingsBtn">×</button>
+            </div>
+            <div class="modal-body">
+                <!-- GENERATION PARAMETERS -->
+                <div class="settings-section">
+                    <h3>Generation Parameters</h3>
+                    
+                    <div class="param-control">
+                        <label>
+                            <span>Temperature</span>
+                            <span class="param-value" id="tempValue">0.7</span>
+                        </label>
+                        <input 
+                            type="range" 
+                            class="param-slider" 
+                            id="temperature"
+                            min="0" 
+                            max="2" 
+                            step="0.1" 
+                            value="0.7"
+                        >
+                        <small>Higher = more creative, Lower = more focused</small>
+                    </div>
+
+                    <div class="param-control">
+                        <label>
+                            <span>Top P</span>
+                            <span class="param-value" id="topPValue">0.9</span>
+                        </label>
+                        <input 
+                            type="range" 
+                            class="param-slider" 
+                            id="top_p"
+                            min="0" 
+                            max="1" 
+                            step="0.05" 
+                            value="0.9"
+                        >
+                        <small>Nucleus sampling threshold</small>
+                    </div>
+
+                    <div class="param-control">
+                        <label>
+                            <span>Max Tokens</span>
+                            <span class="param-value" id="maxTokensValue">2000</span>
+                        </label>
+                        <input 
+                            type="range" 
+                            class="param-slider" 
+                            id="max_tokens"
+                            min="100" 
+                            max="4000" 
+                            step="100" 
+                            value="2000"
+                        >
+                        <small>Maximum response length</small>
+                    </div>
+
+                    <div class="param-control">
+                        <label>
+                            <span>Repeat Penalty</span>
+                            <span class="param-value" id="repeatPenaltyValue">1.1</span>
+                        </label>
+                        <input 
+                            type="range" 
+                            class="param-slider" 
+                            id="repeat_penalty"
+                            min="1" 
+                            max="2" 
+                            step="0.1" 
+                            value="1.1"
+                        >
+                        <small>Penalize repeated tokens</small>
+                    </div>
+                </div>
+
+                <!-- APPEARANCE SETTINGS -->
+                <div class="settings-section">
+                    <h3>Appearance</h3>
+                    <div class="param-control">
+                        <label>
+                            <span>Font Size</span>
+                            <span class="param-value" id="fontSizeValue">15px</span>
+                        </label>
+                        <input 
+                            type="range" 
+                            class="param-slider" 
+                            id="font_size"
+                            min="12" 
+                            max="20" 
+                            step="1" 
+                            value="15"
+                        >
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- EXPORT DROPDOWN (Hidden by default) -->
+    <div class="dropdown" id="exportDropdown" style="position: fixed; opacity: 0; pointer-events: none;">
+        <div class="dropdown-menu">
+            <button class="dropdown-item" id="exportMarkdown">Export as Markdown</button>
+            <button class="dropdown-item" id="exportJSON">Export as JSON</button>
+        </div>
+    </div>
+
+    <!-- Optional: Syntax highlighting -->
+    <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script> -->
+    <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script> -->
+    <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-javascript.min.js"></script> -->
+
+    <script src="app.js"></script>
+</body>
+</html>
