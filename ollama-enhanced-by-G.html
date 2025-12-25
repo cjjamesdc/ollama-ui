@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0A0E27">
     <title>Ollama Enhanced by G</title>
 
     <style>
@@ -19,19 +20,93 @@
         pre code {
             background: none;
             padding: 0;
-            font-size: var(--font-sm);
-            line-height: var(--line-height-relaxed);
+            font-size: 14px;
+            line-height: 1.6;
             color: var(--text-primary);
             font-family: var(--font-mono);
+            white-space: pre;
+            word-wrap: normal;
         }
 
         code {
             background-color: var(--bg-tertiary);
-            padding: 2px 6px;
+            padding: 3px 6px;
             border-radius: var(--radius-sm);
             font-family: var(--font-mono);
-            font-size: 13px;
+            font-size: 14px;
             color: var(--text-primary);
+        }
+
+        /* Markdown heading styles */
+        .message-text h1, .message-text h2, .message-text h3,
+        .message-text h4, .message-text h5, .message-text h6 {
+            margin: var(--space-md) 0 var(--space-sm) 0;
+            font-weight: 700;
+            line-height: var(--line-height-tight);
+            color: var(--text-primary);
+            font-size: 1.2em;
+        }
+
+        .message-text h1 { font-size: var(--font-xl); }
+        .message-text h2 { font-size: var(--font-lg); }
+        .message-text h3 { font-size: var(--font-md); }
+        .message-text h4 { font-size: var(--font-sm); font-weight: 700; }
+        .message-text h5 { font-size: var(--font-sm); }
+        .message-text h6 { font-size: var(--font-xs); text-transform: uppercase; }
+
+        /* List styles */
+        .message-text ul, .message-text ol {
+            margin: var(--space-sm) 0;
+            padding-left: var(--space-xl);
+        }
+
+        .message-text li {
+            margin: var(--space-xs) 0;
+            line-height: var(--line-height-relaxed);
+        }
+
+        /* Blockquote styles */
+        .message-text blockquote {
+            margin: var(--space-md) 0;
+            padding: var(--space-sm) var(--space-md);
+            border-left: 4px solid var(--accent-primary);
+            background-color: var(--bg-tertiary);
+            border-radius: var(--radius-sm);
+            
+            color: var(--text-secondary);
+        }
+
+        /* Link styles */
+        .message-text a {
+            color: var(--accent-primary);
+            text-decoration: underline;
+            transition: color var(--transition-fast);
+        }
+
+        .message-text a:hover {
+            color: var(--accent-hover);
+        }
+
+        /* Horizontal rule */
+        .message-text hr {
+            border: none;
+            border-top: 2px solid var(--border);
+            margin: var(--space-md) 0;
+        }
+
+        /* Strong and emphasis */
+        .message-text strong {
+            font-weight: 700;
+            color: var(--text-primary);
+        }
+
+        .message-text em {
+            
+        }
+
+        .message-text del {
+            text-decoration: line-through;
+            opacity: 0.7;
         }
     </style>
 
@@ -47,7 +122,6 @@
         .sidebar {
             width: 280px;
             background-color: var(--bg-secondary);
-            border-right: 1px solid var(--border);
             display: flex;
             flex-direction: column;
             padding: var(--space-lg);
@@ -56,13 +130,110 @@
             top: 0;
             height: 100vh;
             z-index: 250;
-            transform: translateX(0);
-            transition: transform var(--transition-normal);
-            box-shadow: 2px 0 8px var(--shadow);
+            transition: width var(--transition-normal), padding var(--transition-normal);
+            box-shadow: none;
+            overflow: hidden;
         }
 
         .sidebar.collapsed {
-            transform: translateX(-100%);
+            width: 48px;
+            padding: var(--space-sm);
+        }
+
+        .sidebar-toggle-fixed {
+            position: absolute;
+            top: var(--space-sm);
+            left: var(--space-sm);
+            z-index: 1000;
+            background-color: transparent;
+            transition: all var(--transition-normal);
+            padding: var(--space-xs);
+            opacity: 0.6;
+        }
+
+        .sidebar-toggle-fixed:hover {
+            opacity: 1;
+            background-color: var(--bg-tertiary);
+        }
+
+        .sidebar-toggle-fixed svg {
+            width: 18px;
+            height: 18px;
+        }
+
+        .sidebar.collapsed .sidebar-toggle-fixed {
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        .sidebar-content {
+            opacity: 1;
+            height: 100%;
+            padding-top: 50px;
+            display: flex;
+            flex-direction: column;
+            transition: opacity var(--transition-fast);
+        }
+
+        .sidebar.collapsed .sidebar-content {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .sidebar-footer {
+            margin-top: auto;
+            padding-top: var(--space-md);
+            border-top: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            gap: var(--space-xs);
+        }
+
+        .sidebar-footer .icon-btn {
+            background-color: transparent;
+            border-radius: var(--radius-sm);
+            padding: var(--space-sm);
+            font-size: var(--font-sm);
+            color: var(--text-secondary);
+        }
+
+        .sidebar-footer .icon-btn:hover {
+            background-color: var(--bg-tertiary);
+            color: var(--text-primary);
+        }
+
+        /* LOGO */
+        .sidebar-logo {
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+            padding: var(--space-md) 0;
+            margin-bottom: var(--space-lg);
+            border-bottom: 1px solid rgba(var(--border-rgb, 128, 128, 128), 0.3);
+        }
+
+        .sidebar-logo .logo-icon {
+            font-size: 44px;
+            line-height: 1;
+        }
+
+        .sidebar-logo .logo-text {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .sidebar-logo .logo-title {
+            font-size: var(--font-lg);
+            font-weight: 600;
+            color: var(--text-primary);
+            line-height: 1.2;
+        }
+
+        .sidebar-logo .logo-subtitle {
+            font-size: var(--font-xs);
+            color: var(--text-tertiary);
+            line-height: 1;
         }
 
         .main-content {
@@ -74,7 +245,7 @@
         }
 
         .container.sidebar-closed .main-content {
-            margin-left: 0;
+            margin-left: 48px;
         }
 
         .logo {
@@ -104,50 +275,69 @@
             margin-bottom: var(--space-lg);
             margin-top: -8px;
             padding-left: 52px;
-            font-style: italic;
+            
         }
 
         .new-chat-btn {
-            width: 100%;
-            margin-bottom: var(--space-lg);
+            width: 48%;
+            margin-bottom: var(--space-md);
+            font-weight: 600;
+            padding: var(--space-sm);
+        }
+        .clear-chat-btn {
+            width: 48%;
+            margin-bottom: var(--space-md);
+            font-weight: 600;
+            padding: var(--space-sm);
+            background-color: var(--error);
+        }
+        .clear-chat-btn:hover {
+            background-color: #d32f2f;
+            transform: translateY(-1px);
+        }
+        .button-group {
+            display: flex;
+            gap: var(--space-sm);
         }
 
         .model-selector {
-            margin-bottom: var(--space-lg);
+            margin-bottom: var(--space-md);
         }
 
         .model-selector label {
             display: block;
             font-size: var(--font-xs);
-            text-transform: uppercase;
             color: var(--text-tertiary);
-            margin-bottom: var(--space-sm);
-            font-weight: 500;
-            letter-spacing: 0.5px;
+            margin-bottom: var(--space-xs);
+            font-weight: 600;
         }
 
         .chat-history {
             flex: 1;
             overflow-y: auto;
-            margin-bottom: var(--space-lg);
+            margin-top: var(--space-sm);
         }
 
         .chat-item {
             padding: var(--space-sm) var(--space-md);
-            margin-bottom: var(--space-xs);
-            border-radius: var(--radius-md);
+            margin-bottom: 2px;
+            border-radius: var(--radius-sm);
             color: var(--text-secondary);
             font-size: var(--font-sm);
             cursor: pointer;
-            transition: background-color var(--transition-normal);
+            transition: all var(--transition-fast);
             display: flex;
             align-items: center;
             gap: var(--space-sm);
             position: relative;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
 
         .chat-item:hover {
             background-color: var(--bg-tertiary);
+            color: var(--text-primary);
         }
 
         .chat-item:hover .chat-item-actions {
@@ -155,9 +345,9 @@
         }
 
         .chat-item.active {
-            background-color: var(--bg-tertiary);
-            color: var(--text-primary);
-            border-left: 3px solid var(--accent-primary);
+            background-color: var(--accent-primary);
+            color: var(--bg-primary);
+            font-weight: 500;
         }
 
         .chat-item-actions {
@@ -196,25 +386,19 @@
         }
 
         .chat-header {
-            padding: var(--space-lg) var(--space-xl);
+            padding: var(--space-md) var(--space-xl);
             background-color: var(--bg-secondary);
-            border-bottom: 1px solid var(--border);
             display: flex;
             align-items: center;
             justify-content: space-between;
+            gap: var(--space-md);
         }
 
         .chat-title {
             font-size: var(--font-lg);
-            font-weight: 500;
-            cursor: pointer;
-            padding: 4px 8px;
-            border-radius: var(--radius-sm);
-            transition: background-color var(--transition-normal);
-        }
-
-        .chat-title:hover {
-            background-color: var(--bg-tertiary);
+            font-weight: 600;
+            color: var(--text-primary);
+            margin: 0;
         }
 
         .chat-title-edit {
@@ -243,13 +427,20 @@
             flex: 1;
             overflow-y: auto;
             padding: var(--space-xl);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .chat-messages > * {
+            width: 100%;
+            max-width: 900px;
         }
 
         /* INPUT AREA */
         .chat-input-container {
             padding: var(--space-lg) var(--space-xl);
             background-color: var(--bg-secondary);
-            border-top: 1px solid var(--border);
         }
 
         .chat-input-wrapper {
@@ -303,19 +494,20 @@
             align-items: center;
             justify-content: space-between;
             padding: var(--space-sm) var(--space-md);
-            background-color: var(--bg-tertiary);
-            border: none;
+            background-color: transparent;
+            border: 1px solid var(--border);
             border-radius: var(--radius-md);
             color: var(--text-secondary);
-            font-size: var(--font-sm);
-            font-weight: 500;
+            font-size: var(--font-xs);
+            font-weight: 600;
             cursor: pointer;
             transition: all var(--transition-normal);
         }
 
         .system-prompt-toggle:hover {
-            background-color: var(--accent-light);
+            background-color: var(--bg-tertiary);
             color: var(--text-primary);
+            border-color: var(--accent-primary);
         }
 
         .toggle-icon {
@@ -328,28 +520,35 @@
 
         .system-prompt-editor {
             margin-top: var(--space-sm);
-            padding: var(--space-md);
-            background-color: var(--bg-tertiary);
-            border-radius: var(--radius-md);
+            padding: 0;
             max-height: 0;
             overflow: hidden;
-            transition: max-height var(--transition-slow);
+            transition: max-height var(--transition-slow), padding var(--transition-slow);
         }
 
         .system-prompt-editor.active {
-            max-height: 400px;
+            max-height: 350px;
+            padding: var(--space-md);
+            padding-top: var(--space-sm);
         }
 
         .system-prompt-input {
             width: 100%;
-            min-height: 100px;
-            margin-bottom: var(--space-md);
+            min-height: 80px;
+            margin-bottom: var(--space-sm);
+            font-size: var(--font-sm);
+            resize: vertical;
         }
 
         .system-prompt-actions {
             display: flex;
-            gap: var(--space-sm);
+            gap: var(--space-xs);
             justify-content: flex-end;
+        }
+
+        .system-prompt-actions .btn {
+            font-size: var(--font-xs);
+            padding: var(--space-xs) var(--space-sm);
         }
 
         /* SETTINGS SECTION */
@@ -429,15 +628,19 @@
         @media (max-width: 768px) {
             .sidebar {
                 position: fixed;
-                left: -280px;
                 top: 0;
                 height: 100vh;
                 z-index: 100;
-                transition: left var(--transition-slow);
             }
 
-            .sidebar.active {
-                left: 0;
+            /* On mobile, fully hide the sidebar when collapsed */
+            .sidebar.collapsed {
+                width: 0;
+                padding: 0;
+            }
+
+            .container.sidebar-closed .main-content {
+                margin-left: 0;
             }
 
             .container {
@@ -460,55 +663,55 @@ Eye-Strain Friendly Colors
    =========================== */
 
 :root {
-  /* Light Mode - Warm & Soft */
-  --bg-primary: #F5F1E8;
-  --bg-secondary: #EAE4D5;
-  --bg-tertiary: #E0D9C7;
+  /* Light Mode - Clean & Modern */
+  --bg-primary: #FFFFFF;
+  --bg-secondary: #F8F9FA;
+  --bg-tertiary: #E9ECEF;
 
-  --text-primary: #2C2C2C;
-  --text-secondary: #5A5A5A;
-  --text-tertiary: #8A8A8A;
+  --text-primary: #1A1A1A;
+  --text-secondary: #4A4A4A;
+  --text-tertiary: #9A9A9A;
 
-  --accent-primary: #6B8E99;
-  --accent-hover: #5A7A84;
-  --accent-light: #A8C5CF;
+  --accent-primary: #0066FF;
+  --accent-hover: #0052CC;
+  --accent-light: #CCE0FF;
 
-  --success: #7A9F7E;
-  --warning: #D4A574;
-  --error: #C17B7B;
-  --info: #88ADB8;
+  --success: #00C853;
+  --warning: #FFA726;
+  --error: #E53935;
+  --info: #29B6F6;
 
-  --message-user: #E8E4D5;
-  --message-ai: #EAE4D5;
+  --message-user: transparent;
+  --message-ai: transparent;
 
-  --border: #E0D9C7;
-  --shadow: rgba(44, 44, 44, 0.08);
+  --border: #E8E8E8;
+  --shadow: rgba(0, 0, 0, 0.05);
   --overlay: rgba(0, 0, 0, 0.4);
 }
 
 [data-theme="dark"] {
-  /* Dark Mode - Reduced Blue Light */
+  /* Dark Mode - Classic Dark Theme */
   --bg-primary: #1E1E1E;
   --bg-secondary: #2A2A2A;
   --bg-tertiary: #363636;
 
-  --text-primary: #E8E6E3;
-  --text-secondary: #B8B5B2;
-  --text-tertiary: #8A8784;
+  --text-primary: #E8E8E8;
+  --text-secondary: #B8B8B8;
+  --text-tertiary: #888888;
 
-  --accent-primary: #88ADB8;
-  --accent-hover: #9DBEC8;
-  --accent-light: #6B8E99;
+  --accent-primary: #FFFFFF;
+  --accent-hover: #E0E0E0;
+  --accent-light: #C0C0C0;
 
-  --success: #8FAF8F;
-  --warning: #D4A574;
-  --error: #C98989;
-  --info: #88ADB8;
+  --success: #4CAF50;
+  --warning: #FFA726;
+  --error: #EF5350;
+  --info: #42A5F5;
 
-  --message-user: #2A3A3F;
-  --message-ai: #2A2A2A;
+  --message-user: transparent;
+  --message-ai: transparent;
 
-  --border: #363636;
+  --border: #333333;
   --shadow: rgba(0, 0, 0, 0.3);
   --overlay: rgba(0, 0, 0, 0.6);
 }
@@ -530,7 +733,7 @@ Eye-Strain Friendly Colors
    =========================== */
 :root {
   --font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Inter', sans-serif;
-  --font-mono: 'Monaco', 'Courier New', monospace;
+  --font-mono: 'SF Mono', 'Consolas', 'Monaco', 'Menlo', 'Courier New', monospace;
 
   --font-xs: 12px;
   --font-sm: 14px;
@@ -769,7 +972,7 @@ select.input {
 
 .message-content {
   flex: 1;
-  max-width: 800px;
+  max-width: 900px;
 }
 
 .message-role {
@@ -786,6 +989,8 @@ select.input {
   border-radius: var(--radius-lg);
   line-height: var(--line-height-normal);
   font-size: var(--font-md);
+  font-weight: normal;
+  font-style: normal;
 }
 
 .message.user .message-text {
@@ -798,40 +1003,121 @@ select.input {
   color: var(--text-primary);
 }
 
+/* Clean minimal styling for default themes */
+[data-theme="light"] .message-text,
+[data-theme="dark"] .message-text {
+  padding: 0;
+  border-radius: 0;
+  background-color: transparent;
+}
+
+[data-theme="light"] .message-avatar,
+[data-theme="dark"] .message-avatar {
+  width: 32px;
+  height: 32px;
+  font-size: 12px;
+}
+
+/* Subtle alternating background for AI messages in default themes */
+[data-theme="light"] .message.ai,
+[data-theme="dark"] .message.ai {
+  padding: var(--space-lg) var(--space-xl);
+  margin-left: calc(var(--space-xl) * -1);
+  margin-right: calc(var(--space-xl) * -1);
+  background-color: var(--bg-secondary);
+}
+
+[data-theme="light"] .message.user,
+[data-theme="dark"] .message.user {
+  padding: var(--space-lg) var(--space-xl);
+  margin-left: calc(var(--space-xl) * -1);
+  margin-right: calc(var(--space-xl) * -1);
+}
+
+/* Keep boxes for retro themes */
+[data-theme="retro-light"] .message-text,
+[data-theme="retro-dark"] .message-text {
+  padding: var(--space-md);
+  border-radius: var(--radius-lg);
+}
+
+/* Minimal inputs/selects for default themes */
+[data-theme="light"] .input,
+[data-theme="dark"] .input {
+  border: 1px solid var(--border);
+  background-color: transparent;
+}
+
+[data-theme="light"] .input:focus,
+[data-theme="dark"] .input:focus {
+  border-color: var(--accent-primary);
+  background-color: var(--bg-secondary);
+}
+
+/* Clean sidebar for default themes - subtle borders */
+[data-theme="light"] .sidebar {
+  border-right: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+[data-theme="dark"] .sidebar {
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+[data-theme="light"] .chat-header {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+}
+
+[data-theme="dark"] .chat-header {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+[data-theme="light"] .input,
+[data-theme="dark"] .input {
+  border-color: rgba(128, 128, 128, 0.2);
+}
+
+[data-theme="light"] .chat-input-container,
+[data-theme="dark"] .chat-input-container {
+  border-top: 1px solid rgba(128, 128, 128, 0.1);
+}
+
 /* ===========================
    CHAIN OF THOUGHT
    =========================== */
 
 .chain-of-thought {
   background-color: var(--bg-tertiary);
-  border-left: 3px solid var(--accent-primary);
+  border-left: 4px solid var(--accent-primary);
   padding: var(--space-md);
   margin: var(--space-md) 0;
-  border-radius: var(--radius-sm);
+  border-radius: var(--radius-md);
   font-size: var(--font-sm);
   color: var(--text-secondary);
-  max-height: 300px;
+  max-height: 500px;
   overflow-y: auto;
   cursor: pointer;
   transition: all var(--transition-normal);
 }
 
 .chain-of-thought.collapsed {
-  max-height: 60px;
-  opacity: 0.7;
+  max-height: 50px;
+  opacity: 0.8;
+  overflow: hidden;
 }
 
 .chain-of-thought-header {
-  font-weight: 600;
-  color: var(--text-primary);
+  font-weight: 700;
+  color: var(--accent-primary);
   display: flex;
   align-items: center;
   gap: var(--space-sm);
-  margin-bottom: var(--space-sm);
+  margin-bottom: var(--space-md);
+  font-size: var(--font-sm);
+  user-select: none;
 }
 
 .chain-of-thought.collapsed .chain-of-thought-header::after {
-  content: ' (click to expand)';
+  content: ' (click to see reasoning)';
   font-size: var(--font-xs);
   color: var(--text-tertiary);
   font-weight: 400;
@@ -850,16 +1136,31 @@ select.input {
   line-height: var(--line-height-relaxed);
 }
 
+/* Streaming state for chain of thought */
+.chain-of-thought.streaming {
+  border-left-color: var(--accent-light);
+  animation: pulse-border 2s ease-in-out infinite;
+}
+
+@keyframes pulse-border {
+  0%, 100% {
+    border-left-color: var(--accent-primary);
+  }
+  50% {
+    border-left-color: var(--accent-light);
+  }
+}
+
 /* ===========================
    CODE BLOCKS
    =========================== */
 
 code {
   background-color: var(--bg-tertiary);
-  padding: 2px 6px;
+  padding: 3px 6px;
   border-radius: var(--radius-sm);
   font-family: var(--font-mono);
-  font-size: 13px;
+  font-size: 14px;
   color: var(--text-primary);
 }
 
@@ -874,8 +1175,11 @@ pre {
 pre code {
   background: none;
   padding: 0;
-  font-size: var(--font-sm);
-  line-height: var(--line-height-relaxed);
+  font-size: 14px;
+  line-height: 1.6;
+  font-family: var(--font-mono);
+  white-space: pre;
+  word-wrap: normal;
 }
 
 /* Code syntax highlighting - customize Prism.js colors */
@@ -1270,34 +1574,8 @@ pre code {
    THEMES
    =========================== */
 
-[data-theme="ocean-light"] {
-  --bg-primary: #E6F0F2;
-  --bg-secondary: #D9E8EC;
-  --bg-tertiary: #C1D9DF;
-  --text-primary: #1A3A40;
-  --text-secondary: #426A73;
-  --text-tertiary: #6B8E99;
-  --accent-primary: #4F8A99;
-  --accent-hover: #3C6A73;
-  --accent-light: #88ADB8;
-}
-
-[data-theme="ocean-dark"] {
-  --bg-primary: #1A2A30;
-  --bg-secondary: #243B42;
-  --bg-tertiary: #304D54;
-  --text-primary: #D9E8EC;
-  --text-secondary: #A8C5CF;
-  --text-tertiary: #88ADB8;
-  --accent-primary: #6B8E99;
-  --accent-hover: #88ADB8;
-  --accent-light: #4F8A99;
-  --message-user: #1F3038;
-  --message-ai: #1A2A30;
-}
-
-[data-theme="retro-dark"] {
-  /* 80s/90s Terminal Style - Yellow/Orange on Black */
+[data-theme="retro-light"] {
+  /* 80s/90s Terminal Style - Yellow/Orange on Dark Blue */
   --bg-primary: #0A0E27;
   --bg-secondary: #0F1433;
   --bg-tertiary: #161B3D;
@@ -1318,27 +1596,28 @@ pre code {
   --overlay: rgba(0, 0, 0, 0.7);
 }
 
-[data-theme="retro-light"] {
-  /* Retro Light - Cream on Dark Text (like old monitors) */
-  --bg-primary: #FFFACD;
-  --bg-secondary: #FFF8DC;
-  --bg-tertiary: #FFE4B5;
-  --text-primary: #1a1a1a;
-  --text-secondary: #333333;
-  --text-tertiary: #666666;
-  --accent-primary: #CC7000;
-  --accent-hover: #994C00;
-  --accent-light: #FF9500;
-  --success: #006600;
-  --warning: #FF6600;
-  --error: #CC0000;
-  --info: #0066CC;
-  --message-user: #FFE4B5;
-  --message-ai: #FFF8DC;
-  --border: #DAA520;
-  --shadow: rgba(0, 0, 0, 0.1);
-  --overlay: rgba(0, 0, 0, 0.5);
+[data-theme="retro-dark"] {
+  /* IBM Green Terminal - Classic Monochrome CRT */
+  --bg-primary: #000000;
+  --bg-secondary: #0A0A0A;
+  --bg-tertiary: #1A1A1A;
+  --text-primary: #00FF00;
+  --text-secondary: #00DD00;
+  --text-tertiary: #00BB00;
+  --accent-primary: #00FF00;
+  --accent-hover: #00DD00;
+  --accent-light: #33FF33;
+  --success: #00FF00;
+  --warning: #FFFF00;
+  --error: #FF0000;
+  --info: #00FFFF;
+  --message-user: #0a1a0a;
+  --message-ai: #0A0A0A;
+  --border: #003300;
+  --shadow: rgba(0, 255, 0, 0.1);
+  --overlay: rgba(0, 0, 0, 0.8);
 }
+
 
 /* ===========================
    RESPONSIVE BREAKPOINTS
@@ -1363,100 +1642,61 @@ pre code {
 }
     </style>
 </head>
-<body data-theme="light">
+<body data-theme="retro-light">
     <div class="container">
         <!-- SIDEBAR -->
         <aside class="sidebar">
-            <div class="logo">
-                <div class="logo-icon">🦙</div>
-                <span>Charlie Llama</span>
-            </div>
-            <div class="logo-tagline">Your personal AI companion</div>
-
-            <button class="btn btn-primary new-chat-btn" id="newChatBtn">
-                + New Chat
+            <!-- HAMBURGER - Always visible -->
+            <button class="icon-btn sidebar-toggle-fixed" id="sidebarToggleBtn" title="Toggle Sidebar">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="3" y1="6" x2="21" y2="6"></line>
+                    <line x1="3" y1="12" x2="21" y2="12"></line>
+                    <line x1="3" y1="18" x2="21" y2="18"></line>
+                </svg>
             </button>
 
-            <!-- MODEL SELECTOR -->
-            <div class="model-selector">
-                <label>Model</label>
-                <select class="input" id="modelSelect">
-                    <!-- Populated dynamically from Ollama -->
-                </select>
-            </div>
-
-            <!-- CHAT SEARCH -->
-            <input class="input" id="chatSearch" placeholder="🔍 Search chats..." style="margin-bottom: var(--space-md);">
-
-            <!-- SAVED CHATS SECTION -->
-            <div style="font-size: var(--font-xs); text-transform: uppercase; color: var(--text-tertiary); margin-bottom: var(--space-sm); font-weight: 500; letter-spacing: 0.5px;">Saved Chats</div>
-
-            <!-- CHAT HISTORY -->
-            <div class="chat-history" id="chatHistory">
-                <div class="chat-item active" id="currentChat">Current Chat</div>
-            </div>
-
-            <!-- SAVE CURRENT CHAT BUTTON -->
-            <button class="btn btn-secondary" id="saveCurrentChatBtn" style="width: 100%; margin-bottom: var(--space-md); font-size: var(--font-sm);">⬇ Save Chat</button>
-
-
-        </aside>
-
-        <!-- MAIN CONTENT -->
-        <main class="main-content">
-            <!-- HEADER -->
-            <div class="chat-header">
-                <div style="display: flex; align-items: center; gap: var(--space-sm); flex: 1;">
-                    <button class="icon-btn" id="sidebarToggleBtn" title="Toggle Sidebar">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <line x1="3" y1="6" x2="21" y2="6"></line>
-                            <line x1="3" y1="12" x2="21" y2="12"></line>
-                            <line x1="3" y1="18" x2="21" y2="18"></line>
-                        </svg>
-                    </button>
-                    <h1 class="chat-title" id="chatTitle" style="flex: 1;">Charlie Llama Chat</h1>
-                </div>
-                <div class="header-actions">
-                    <button class="icon-btn" id="themeToggleBtn" title="Toggle Dark/Light Mode">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
-                        </svg>
-                    </button>
-                    <button class="icon-btn" id="settingsBtn" title="Settings">
-                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                            <circle cx="12" cy="12" r="3"></circle>
-                            <path d="M12 1v6m0 6v6M4.22 4.22l4.24 4.24m6.08 0l4.24-4.24M1 12h6m6 0h6m-1.78 7.78l-4.24-4.24m-6.08 0l-4.24 4.24"/>
-                        </svg>
-                    </button>
-                    <div class="badge badge-success" id="statusBadge">
-                        ● Ready
+            <div class="sidebar-content">
+                <!-- LOGO -->
+                <div class="sidebar-logo">
+                    <div class="logo-icon">🦙</div>
+                    <div class="logo-text">
+                        <div class="logo-title">Charlie Lama</div>
+                        <div class="logo-subtitle">AI Chat Interface</div>
                     </div>
                 </div>
-            </div>
 
-            <!-- MESSAGES -->
-            <div class="chat-messages" id="chatMessages">
-                <!-- Messages will be dynamically inserted here -->
-            </div>
+                <!-- NEW CHAT BUTTONS -->
+                <div class="button-group">
+                    <button class="btn btn-primary new-chat-btn" id="newChatBtn">
+                        + New Chat
+                    </button>
+                    <button class="btn btn-primary clear-chat-btn" id="clearChatBtn">
+                        ⟳ Clear
+                    </button>
+                </div>
 
-            <!-- INPUT AREA -->
-            <div class="chat-input-container">
-                <!-- SYSTEM PROMPT EDITOR (Collapsible) -->
+                <!-- MODEL SELECTOR -->
+                <div class="model-selector">
+                    <label>Model</label>
+                    <select class="input" id="modelSelect">
+                        <option value="">Loading models...</option>
+                        <!-- Populated dynamically from Ollama -->
+                    </select>
+                </div>
+
+                <!-- SYSTEM PROMPT -->
                 <div class="system-prompt-container">
                     <button class="system-prompt-toggle" id="systemPromptToggle">
                         <span>System Prompt</span>
                         <span class="toggle-icon">▼</span>
                     </button>
                     <div class="system-prompt-editor" id="systemPromptEditor">
-                        <label style="font-size: var(--font-xs); color: var(--text-tertiary); margin-bottom: var(--space-sm); display: block;">Quick Templates</label>
-                        <select class="input" id="promptTemplate" style="margin-bottom: var(--space-md);">
-                            <option value="">Select a template...</option>
-                            <option value="assistant">Default Assistant</option>
-                            <option value="coder">Code Helper</option>
-                            <option value="tutor">Patient Tutor</option>
-                            <option value="writer">Creative Writer</option>
-                            <option value="explainer">Technical Explainer</option>
-                            <option value="brainstorm">Brainstorming Partner</option>
+                        <select class="input" id="promptTemplate" style="margin-bottom: var(--space-sm); font-size: var(--font-xs);">
+                            <option value="">Quick Templates...</option>
+                            <option value="assistant">Assistant</option>
+                            <option value="coder">Coder</option>
+                            <option value="tutor">Tutor</option>
+                            <option value="writer">Writer</option>
                         </select>
                         <textarea
                             class="input system-prompt-input"
@@ -1470,13 +1710,57 @@ pre code {
                     </div>
                 </div>
 
+                <!-- CHAT HISTORY -->
+                <div class="chat-history" id="chatHistory">
+                    <div class="chat-item active" id="currentChat">Current Chat</div>
+                </div>
+
+                <!-- SIDEBAR FOOTER -->
+                <div class="sidebar-footer">
+                    <button class="icon-btn" id="themeToggleBtn" title="Toggle Theme" style="width: 100%; justify-content: flex-start; gap: var(--space-sm);">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                        </svg>
+                        <span style="font-size: var(--font-sm);">Theme</span>
+                    </button>
+                    <button class="icon-btn" id="settingsBtn" title="Settings" style="width: 100%; justify-content: flex-start; gap: var(--space-sm);">
+                        <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor">
+                            <path d="M8 4.754a3.246 3.246 0 1 0 0 6.492 3.246 3.246 0 0 0 0-6.492M5.754 8a2.246 2.246 0 1 1 4.492 0 2.246 2.246 0 0 1-4.492 0"/>
+                            <path d="M9.796 1.343c-.527-1.79-3.065-1.79-3.592 0l-.094.319a.873.873 0 0 1-1.255.52l-.292-.16c-1.64-.892-3.433.902-2.54 2.541l.159.292a.873.873 0 0 1-.52 1.255l-.319.094c-1.79.527-1.79 3.065 0 3.592l.319.094a.873.873 0 0 1 .52 1.255l-.16.292c-.892 1.64.901 3.434 2.541 2.54l.292-.159a.873.873 0 0 1 1.255.52l.094.319c.527 1.79 3.065 1.79 3.592 0l.094-.319a.873.873 0 0 1 1.255-.52l.292.16c1.64.893 3.434-.902 2.54-2.541l-.159-.292a.873.873 0 0 1 .52-1.255l.319-.094c1.79-.527 1.79-3.065 0-3.592l-.319-.094a.873.873 0 0 1-.52-1.255l.16-.292c.893-1.64-.902-3.433-2.541-2.54l-.292.159a.873.873 0 0 1-1.255-.52zm-2.633.283c.246-.835 1.428-.835 1.674 0l.094.319a1.873 1.873 0 0 0 2.693 1.115l.291-.16c.764-.415 1.6.42 1.184 1.185l-.159.292a1.873 1.873 0 0 0 1.116 2.692l.318.094c.835.246.835 1.428 0 1.674l-.319.094a1.873 1.873 0 0 0-1.115 2.693l.16.291c.415.764-.42 1.6-1.185 1.184l-.291-.159a1.873 1.873 0 0 0-2.693 1.116l-.094.318c-.246.835-1.428.835-1.674 0l-.094-.319a1.873 1.873 0 0 0-2.692-1.115l-.292.16c-.764.415-1.6-.42-1.184-1.185l.159-.291A1.873 1.873 0 0 0 1.945 8.93l-.319-.094c-.835-.246-.835-1.428 0-1.674l.319-.094A1.873 1.873 0 0 0 3.06 4.377l-.16-.292c-.415-.764.42-1.6 1.185-1.184l.292.159a1.873 1.873 0 0 0 2.692-1.115z"/>
+                        </svg>
+                        <span style="font-size: var(--font-sm);">Settings</span>
+                    </button>
+                </div>
+            </div>
+
+        </aside>
+
+        <!-- MAIN CONTENT -->
+        <main class="main-content">
+            
+            
+            <!-- HEADER -->
+            <div class="chat-header">
+                <h1 class="chat-title" id="chatTitle">Charlie Llama Chat</h1>
+                <div class="badge badge-success" id="statusBadge">
+                    ● Ready
+                </div>
+            </div>
+
+            <!-- MESSAGES -->
+            <div class="chat-messages" id="chatMessages">
+                <!-- Messages will be dynamically inserted here -->
+            </div>
+
+            <!-- INPUT AREA -->
+            <div class="chat-input-container">
                 <!-- CHAT INPUT -->
                 <div class="chat-input-wrapper">
                     <textarea
                         class="input chat-input"
                         id="chatInput"
                         placeholder="Ask Charlie Llama anything..."
-                        rows="1"
+                        rows="3"
                     ></textarea>
                     <div class="input-actions">
                         <span class="token-counter" id="tokenCounter">Ready</span>
@@ -1548,7 +1832,7 @@ pre code {
                             id="num_predict"
                             min="100"
                             max="4000"
-                            step="100"
+                            step="500"
                             value="2000"
                             data-original-max="4000"
                         >
@@ -1581,10 +1865,8 @@ pre code {
                         <select id="theme-select" class="input">
                             <option value="light">Default Light</option>
                             <option value="dark">Default Dark</option>
-                            <option value="ocean-light">Ocean Light</option>
-                            <option value="ocean-dark">Ocean Dark</option>
-                            <option value="retro-dark">Retro Dark (Terminal)</option>
                             <option value="retro-light">Retro Light</option>
+                            <option value="retro-dark">Retro Dark (IBM Terminal)</option>
                         </select>
                     </div>
                     <div class="param-control">
@@ -1604,27 +1886,67 @@ pre code {
                     </div>
                 </div>
 
-                <!-- UI PREFERENCES -->
-                <div class="settings-section">
-                    <h3>UI Preferences</h3>
-                    <div class="param-control">
-                        <label style="display: flex; align-items: center; gap: var(--space-sm); margin-bottom: 0;">
-                            <input type="checkbox" id="hideThinking" style="width: 18px; height: 18px; cursor: pointer;">
-                            <span>Hide Thinking Indicator</span>
-                        </label>
-                        <small>Model still processes tokens, you just won't see the typing animation</small>
-                    </div>
-                    <div class="param-control">
-                        <label style="display: flex; align-items: center; gap: var(--space-sm); margin-bottom: 0;">
-                            <input type="checkbox" id="collapseChainOfThought" style="width: 18px; height: 18px; cursor: pointer;">
-                            <span>Collapse Chain of Thought by Default</span>
-                        </label>
-                        <small>Chain of thought messages will be collapsed when they appear</small>
-                    </div>
-                </div>
+                
             </div>
         </div>
     </div>
+
+    <style>
+        /* Status Badge Enhancements */
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: var(--radius-sm);
+            font-size: var(--font-xs);
+            font-weight: 500;
+            transition: all var(--transition-normal);
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .status-badge.status-connected {
+            background-color: rgba(122, 159, 126, 0.2);
+            color: var(--success);
+            border: 1px solid var(--success);
+        }
+
+        .status-badge.status-connecting {
+            background-color: rgba(136, 173, 184, 0.2);
+            color: var(--info);
+            border: 1px solid var(--info);
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        .status-badge.status-thinking {
+            background-color: rgba(107, 142, 153, 0.2);
+            color: var(--accent-primary);
+            border: 1px solid var(--accent-primary);
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        .status-badge.status-retrying {
+            background-color: rgba(212, 165, 116, 0.2);
+            color: var(--warning);
+            border: 1px solid var(--warning);
+            animation: pulse 1s ease-in-out infinite;
+        }
+
+        .status-badge.status-error,
+        .status-badge.status-disconnected {
+            background-color: rgba(193, 123, 123, 0.2);
+            color: var(--error);
+            border: 1px solid var(--error);
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.6;
+            }
+        }
+    </style>
 
     <script>
         // ============================================ 
@@ -1632,6 +1954,9 @@ pre code {
         // ============================================ 
 
         const OLLAMA_API_URL = 'http://localhost:11434';
+        const API_TIMEOUT = 60000; // 60 seconds
+        const MAX_RETRIES = 3;
+        const RETRY_DELAY = 1000; // Start with 1 second
 
         const appState = {
             currentModel: '',
@@ -1643,12 +1968,15 @@ pre code {
                 num_predict: 2000,
                 repeat_penalty: 1.1
             },
-            theme: 'light',
+            theme: 'retro-light',
             savedChats: [], // Array of saved chat sessions
             currentLoadedChatId: null, // Track which saved chat is currently loaded
             hideThinking: false, // Hide typing indicator
             sidebarOpen: true, // Sidebar visibility state
-            collapseChainOfThought: false // Collapse chain of thought by default
+            collapseChainOfThought: false, // Collapse chain of thought by default
+            connectionStatus: 'disconnected', // Connection status
+            retryCount: 0, // Number of retries
+            soundEffects: true // Sound effects enabled
         };
 
         // ============================================ 
@@ -1662,6 +1990,7 @@ pre code {
             chatTitle: document.getElementById('chatTitle'),
             modelSelect: document.getElementById('modelSelect'),
             newChatBtn: document.getElementById('newChatBtn'),
+            clearChatBtn: document.getElementById('clearChatBtn'),
             chatHistory: document.getElementById('chatHistory'),
 
             systemPromptToggle: document.getElementById('systemPromptToggle'),
@@ -1681,15 +2010,17 @@ pre code {
             themeSelect: document.getElementById('theme-select'),
             sidebarToggleBtn: document.getElementById('sidebarToggleBtn'),
             sidebar: document.querySelector('.sidebar'),
-            container: document.querySelector('.container'),
-            hideThinkingCheckbox: document.getElementById('hideThinking'),
-            collapseChainOfThoughtCheckbox: document.getElementById('collapseChainOfThought')
+            container: document.querySelector('.container')
         };
 
-        // ============================================ 
-        // MODEL TOKEN LIMITS
-        // ============================================ 
+        // ============================================
+        // MODEL DETAILS & TOKEN LIMITS
+        // ============================================
 
+        // Store detailed model info fetched from Ollama
+        const modelDetails = {};
+
+        // Fallback token limits for models we can't fetch details for
         const modelTokenLimits = {
             // Common Ollama models and their context windows
             'llama2': 4096,
@@ -1756,16 +2087,45 @@ pre code {
 
         function updateMaxTokensSlider() {
             const model = appState.currentModel;
-            const maxTokens = getModelMaxTokens(model);
             const slider = document.getElementById('num_predict');
             const infoText = document.getElementById('maxTokensInfo');
 
-            slider.max = maxTokens;
-            slider.value = Math.min(slider.value, maxTokens);
-            appState.params.num_predict = parseInt(slider.value);
+            // Get model details if available
+            const details = modelDetails[model];
+            let maxTokens, recommendedTokens;
 
-            document.getElementById('maxTokensValue').textContent = slider.value;
-            infoText.textContent = `Maximum: ${maxTokens} tokens (${model})`;
+            if (details && details.contextLength) {
+                // Use real context length from Ollama
+                maxTokens = details.contextLength;
+
+                // Calculate recommended tokens (75% of context, accounting for system prompt)
+                recommendedTokens = Math.floor(maxTokens * 0.75);
+
+                // For cloud models, use full capacity
+                const isCloudModel = model.includes(':cloud');
+                if (isCloudModel) {
+                    infoText.textContent = `☁️ Cloud Model | Max: ${maxTokens.toLocaleString()} tokens`;
+                } else {
+                    const modelSizeGB = details.sizeGB.toFixed(1);
+                    const availableRAM = (18 - details.sizeGB).toFixed(1); // 18GB total - model size
+                    infoText.textContent = `Max: ${maxTokens.toLocaleString()} | Recommended: ${recommendedTokens.toLocaleString()} tokens | Model: ${modelSizeGB}GB | Available RAM: ~${availableRAM}GB`;
+                }
+            } else {
+                // Fallback to hardcoded limits
+                maxTokens = getModelMaxTokens(model);
+                recommendedTokens = Math.floor(maxTokens * 0.75);
+                infoText.textContent = `Maximum: ${maxTokens.toLocaleString()} tokens (estimated)`;
+            }
+
+            // Update slider
+            slider.max = maxTokens;
+
+            // Always set to recommended value when switching models
+            // This ensures optimal RAM usage for each model
+            slider.value = recommendedTokens;
+
+            appState.params.num_predict = parseInt(slider.value);
+            document.getElementById('maxTokensValue').textContent = slider.value.toLocaleString();
         }
 
         // ============================================ 
@@ -1781,7 +2141,175 @@ pre code {
             brainstorm: 'You are a creative brainstorming partner. Generate innovative ideas, explore possibilities, and think outside the box. Build on the user\'s ideas and suggest new angles. Stay positive and encouraging.'
         };
 
-        // ============================================ 
+        // ============================================
+        // ERROR HANDLING
+        // ============================================
+
+        class OllamaAPIError extends Error {
+            constructor(code, message, originalError = null) {
+                super(message);
+                this.name = 'OllamaAPIError';
+                this.code = code;
+                this.originalError = originalError;
+            }
+        }
+
+        function shouldRetry(error) {
+            const retryableCodes = ['NETWORK', 'TIMEOUT', 'MODEL_LOADING', 500, 502, 503, 504];
+            return retryableCodes.includes(error.code) || retryableCodes.includes(error.status);
+        }
+
+        function delay(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        function getErrorMessage(error) {
+            const errorMessages = {
+                'NETWORK': 'Cannot connect to Ollama. Please ensure Ollama is running on localhost:11434',
+                'TIMEOUT': 'Request timed out. The model might be processing a large request. Please try again.',
+                'MODEL_NOT_FOUND': 'Model not found. Please select a valid model from the dropdown.',
+                'MODEL_LOADING': 'Model is still loading. Please wait a moment and try again.',
+                'OUT_OF_MEMORY': 'Model ran out of memory. Try reducing the context size or using a smaller model.',
+                'INVALID_REQUEST': 'Invalid request format. Please try again.',
+                'RATE_LIMITED': 'Too many requests. Please wait a moment before trying again.',
+                500: 'Ollama server error. Please check the Ollama logs.',
+                503: 'Ollama service unavailable. The model might be loading.',
+                504: 'Gateway timeout. The request took too long to process.'
+            };
+
+            if (error instanceof OllamaAPIError) {
+                return errorMessages[error.code] || error.message;
+            }
+
+            return error.message || 'An unexpected error occurred. Please try again.';
+        }
+
+        // ============================================
+        // SOUND EFFECTS
+        // ============================================
+
+        function playSound(type) {
+            if (!appState.soundEffects) return;
+
+            try {
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+
+                switch (type) {
+                    case 'send':
+                        oscillator.frequency.value = 800;
+                        gainNode.gain.value = 0.1;
+                        break;
+                    case 'receive':
+                        oscillator.frequency.value = 600;
+                        gainNode.gain.value = 0.1;
+                        break;
+                    case 'error':
+                        oscillator.frequency.value = 300;
+                        gainNode.gain.value = 0.1;
+                        break;
+                    case 'notification':
+                        oscillator.frequency.value = 1000;
+                        gainNode.gain.value = 0.1;
+                        break;
+                }
+
+                oscillator.start();
+                oscillator.stop(audioContext.currentTime + 0.1);
+            } catch (e) {
+                // Silently fail if audio context not available
+            }
+        }
+
+        // ============================================
+        // CONNECTION HEALTH CHECK
+        // ============================================
+
+        async function checkConnectionHealth() {
+            try {
+                const response = await fetch(`${OLLAMA_API_URL}/api/tags`, {
+                    method: 'HEAD',
+                    signal: AbortSignal.timeout(5000)
+                });
+
+                if (response.ok) {
+                    if (appState.connectionStatus !== 'connected') {
+                        updateConnectionStatus('connected');
+                    }
+                }
+            } catch (error) {
+                if (appState.connectionStatus === 'connected') {
+                    updateConnectionStatus('error');
+                }
+            }
+        }
+
+        async function startHealthCheck() {
+            await checkConnectionHealth();
+            setInterval(checkConnectionHealth, 30000);
+        }
+
+        function updateConnectionStatus(status) {
+            appState.connectionStatus = status;
+            const badge = elements.statusBadge;
+            if (badge) {
+                badge.className = `status-badge status-${status}`;
+                const statusTexts = {
+                    'connected': 'Connected',
+                    'connecting': 'Connecting...',
+                    'thinking': 'AI Thinking...',
+                    'retrying': `Retrying... (${appState.retryCount}/${MAX_RETRIES})`,
+                    'error': 'Disconnected',
+                    'disconnected': 'Disconnected'
+                };
+                badge.textContent = statusTexts[status] || 'Unknown';
+            }
+        }
+
+        // ============================================
+        // KEYBOARD SHORTCUTS
+        // ============================================
+
+        function setupKeyboardShortcuts() {
+            document.addEventListener('keydown', (e) => {
+                // Ctrl/Cmd + K = Focus input
+                if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+                    e.preventDefault();
+                    elements.chatInput?.focus();
+                }
+
+                // Ctrl/Cmd + N = New chat
+                if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
+                    e.preventDefault();
+                    newChat();
+                }
+
+                // Ctrl/Cmd + S = Save chat
+                if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+                    e.preventDefault();
+                    saveCurrentChat();
+                }
+
+                // Ctrl/Cmd + , = Open settings
+                if ((e.ctrlKey || e.metaKey) && e.key === ',') {
+                    e.preventDefault();
+                    openSettings();
+                }
+
+                // Escape = Close modals
+                if (e.key === 'Escape') {
+                    if (elements.settingsModal?.style.display !== 'none') {
+                        closeSettings();
+                    }
+                }
+            });
+        }
+
+        // ============================================
         // INITIALIZATION
         // ============================================ 
 
@@ -1789,6 +2317,7 @@ pre code {
             loadState();
             setupEventListeners();
             setupParameterSliders();
+            setupKeyboardShortcuts();
             autoResizeTextarea();
 
             // Initialize font size styling for message text
@@ -1800,36 +2329,110 @@ pre code {
             }
             style.textContent = `.message-text { font-size: ${fontSizeValue}px !important; }`;
 
+            console.log('About to call populateModels...');
             await populateModels();
+            console.log('populateModels completed, starting health check...');
+            startHealthCheck();
         }
 
-        // ============================================ 
+        // ============================================
+        // OLLAMA API - FETCH MODEL DETAILS
+        // ============================================
+
+        async function fetchModelDetails(modelName) {
+            try {
+                const response = await fetch(`${OLLAMA_API_URL}/api/show`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ name: modelName })
+                });
+
+                if (!response.ok) return null;
+
+                const data = await response.json();
+
+                // Extract context length from model_info
+                // Try all possible architecture-specific keys
+                let contextLength = null;
+                if (data.model_info) {
+                    // Search for any key ending with .context_length
+                    for (const key in data.model_info) {
+                        if (key.endsWith('.context_length')) {
+                            contextLength = data.model_info[key];
+                            break;
+                        }
+                    }
+                }
+
+                // Calculate model size in GB (approximate from size field in /api/tags)
+                const modelSize = data.size || 0;
+                const modelSizeGB = (modelSize / (1024 * 1024 * 1024)).toFixed(1);
+
+                return {
+                    name: modelName,
+                    contextLength: contextLength,
+                    sizeGB: parseFloat(modelSizeGB),
+                    details: data.details
+                };
+            } catch (error) {
+                console.error(`Error fetching details for ${modelName}:`, error);
+                return null;
+            }
+        }
+
+        // ============================================
         // OLLAMA API - FETCH MODELS
-        // ============================================ 
+        // ============================================
 
         async function populateModels() {
+            console.log('populateModels: Starting function...');
+            console.log('modelSelect element:', document.getElementById('modelSelect'));
             try {
+                console.log('Fetching models from:', `${OLLAMA_API_URL}/api/tags`);
                 const response = await fetch(`${OLLAMA_API_URL}/api/tags`);
                 const data = await response.json();
 
                 console.log('Fetched models:', data.models);
+                console.log('Response status:', response.status);
+                console.log('Response ok:', response.ok);
 
                 elements.modelSelect.innerHTML = '';
-                data.models.forEach(model => {
+
+                // Fetch detailed info for each model
+                for (const model of data.models) {
                     const option = document.createElement('option');
                     option.value = model.name;
                     option.textContent = model.name;
                     elements.modelSelect.appendChild(option);
                     console.log('Added option:', model.name);
-                });
+
+                    // Fetch and store model details (don't await to keep UI responsive)
+                    fetchModelDetails(model.name).then(details => {
+                        if (details) {
+                            modelDetails[model.name] = {
+                                contextLength: details.contextLength,
+                                sizeGB: model.size ? (model.size / (1024 * 1024 * 1024)) : 0
+                            };
+                            console.log(`Model ${model.name} context: ${details.contextLength}, size: ${modelDetails[model.name].sizeGB.toFixed(1)}GB`);
+
+                            // Update slider if this is the current model
+                            if (model.name === appState.currentModel) {
+                                updateMaxTokensSlider();
+                            }
+                        }
+                    });
+                }
 
                 if (data.models.length > 0) {
+                    console.log('Models loaded successfully, updating UI...');
                     // Check if saved model still exists
                     const modelExists = data.models.some(m => m.name === appState.currentModel);
                     if (!modelExists || !appState.currentModel) {
                         appState.currentModel = data.models[0].name;
                     }
                     elements.modelSelect.value = appState.currentModel;
+                } else {
+                    console.log('No models found in response');
                 }
 
                 elements.statusBadge.className = 'badge badge-success';
@@ -1837,7 +2440,9 @@ pre code {
                 elements.tokenCounter.textContent = 'Ready';
                 updateMaxTokensSlider();
             } catch (error) {
+                debugInfo.innerHTML = `populateModels: ERROR - ${error.message}`;
                 console.error('Error fetching models:', error);
+                elements.modelSelect.innerHTML = '<option value="">Ollama not running</option>';
                 elements.statusBadge.className = 'badge badge-error';
                 elements.statusBadge.textContent = '● Disconnected';
                 elements.tokenCounter.textContent = 'Ollama not running';
@@ -1859,8 +2464,25 @@ pre code {
             });
 
             // Model selector
-            elements.modelSelect.addEventListener('change', (e) => {
+            elements.modelSelect.addEventListener('change', async (e) => {
                 appState.currentModel = e.target.value;
+
+                // If model details not loaded yet, fetch them now
+                if (!modelDetails[appState.currentModel]) {
+                    const details = await fetchModelDetails(appState.currentModel);
+                    if (details) {
+                        // Get size from the models list
+                        const modelsResponse = await fetch(`${OLLAMA_API_URL}/api/tags`);
+                        const modelsData = await modelsResponse.json();
+                        const modelInfo = modelsData.models.find(m => m.name === appState.currentModel);
+
+                        modelDetails[appState.currentModel] = {
+                            contextLength: details.contextLength,
+                            sizeGB: modelInfo ? (modelInfo.size / (1024 * 1024 * 1024)) : 0
+                        };
+                    }
+                }
+
                 updateMaxTokensSlider();
                 saveState();
             });
@@ -1868,8 +2490,13 @@ pre code {
             // New chat
             elements.newChatBtn.addEventListener('click', handleNewChat);
 
-            // Theme selector
-            elements.themeSelect.addEventListener('change', (e) => setTheme(e.target.value));
+            // Clear chat
+            elements.clearChatBtn.addEventListener('click', handleClearChat);
+
+            // Theme selector (if exists)
+            if (elements.themeSelect) {
+                elements.themeSelect.addEventListener('change', (e) => setTheme(e.target.value));
+            }
 
             // Chat title editing
             elements.chatTitle.addEventListener('click', handleEditTitle);
@@ -1890,29 +2517,24 @@ pre code {
             // Theme toggle button (Dark/Light mode)
             elements.themeToggleBtn.addEventListener('click', toggleDarkLightMode);
 
-            // Save chat button
-            elements.saveCurrentChatBtn.addEventListener('click', handleSaveChat);
+            // Sidebar toggle
+            elements.sidebarToggleBtn.addEventListener('click', toggleSidebar);
 
             // Keyboard shortcuts
             document.addEventListener('keydown', handleKeyboardShortcuts);
 
-            // Chat search
-            document.getElementById('chatSearch').addEventListener('input', handleChatSearch);
+            // Save chat button (if exists)
+            if (elements.saveCurrentChatBtn) {
+                elements.saveCurrentChatBtn.addEventListener('click', handleSaveChat);
+            }
 
-            // Sidebar toggle
-            elements.sidebarToggleBtn.addEventListener('click', toggleSidebar);
+            // Chat search (if exists)
+            const chatSearch = document.getElementById('chatSearch');
+            if (chatSearch) {
+                chatSearch.addEventListener('input', handleChatSearch);
+            }
 
-            // Hide thinking toggle
-            elements.hideThinkingCheckbox.addEventListener('change', (e) => {
-                appState.hideThinking = e.target.checked;
-                saveState();
-            });
-
-            // Collapse chain of thought toggle
-            elements.collapseChainOfThoughtCheckbox.addEventListener('change', (e) => {
-                appState.collapseChainOfThought = e.target.checked;
-                saveState();
-            });
+            
         }
 
         // ============================================ 
@@ -1943,6 +2565,7 @@ pre code {
 
             if (!appState.currentModel) {
                 showError('Please select a model first');
+                playSound('error');
                 return;
             }
 
@@ -1962,50 +2585,19 @@ pre code {
             // Show typing indicator
             showTypingIndicator();
             elements.sendBtn.disabled = true;
+            updateConnectionStatus('thinking');
             elements.tokenCounter.textContent = 'Thinking...';
 
-            // Add small delay to ensure typing indicator is visible
-            await new Promise(resolve => setTimeout(resolve, 100));
+            // Play send sound
+            playSound('send');
+
+            // Reset retry count for new message
+            appState.retryCount = 0;
 
             try {
-                // Call Ollama API
-                const requestBody = {
-                    model: appState.currentModel,
-                    messages: [
-                        { role: 'system', content: appState.systemPrompt },
-                        ...appState.conversationHistory
-                    ],
-                    stream: false,
-                    options: appState.params
-                };
-
-                console.log('Sending request to:', `${OLLAMA_API_URL}/api/chat`);
-                console.log('With model:', appState.currentModel);
-                console.log('Request body:', requestBody);
-
-                const response = await fetch(`${OLLAMA_API_URL}/api/chat`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(requestBody),
-                });
-
-                console.log('Response status:', response.status);
-
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    console.error('Error response:', errorText);
-                    throw new Error(`API request failed with status ${response.status}: ${errorText}`);
-                }
-
-                const data = await response.json();
-                console.log('Response data:', data);
-
-                hideTypingIndicator();
-
-                // Add AI response to UI
-                addMessageToUI('ai', data.message.content);
+                // Call Ollama API with retry logic (now with streaming)
+                // The typing indicator will be hidden when first text arrives
+                const data = await callOllamaAPIWithRetry();
 
                 // Add to conversation history
                 appState.conversationHistory.push(data.message);
@@ -2018,29 +2610,289 @@ pre code {
 
                 elements.tokenCounter.textContent = `Prompt: ${promptTokens} | Response: ${responseTokens} | ${tokensPerSecond} tok/s`;
 
+                // Play receive sound
+                playSound('receive');
+                updateConnectionStatus('connected');
+
                 saveState();
 
             } catch (error) {
                 hideTypingIndicator();
                 console.error('Error during chat:', error);
-                const errorMsg = error.message || error.toString();
+                const errorMsg = getErrorMessage(error);
                 showError(`Failed to send message: ${errorMsg}`);
+                playSound('error');
+                updateConnectionStatus('error');
             } finally {
                 elements.sendBtn.disabled = false;
                 elements.chatInput.focus();
             }
         }
 
-        function extractChainOfThought(content) {
-            // Look for thinking tags <thinking>...</thinking>
-            const thinkingMatch = content.match(/<thinking>([\s\S]*?)<\/thinking>/);
-            if (thinkingMatch) {
-                return {
-                    thinking: thinkingMatch[1].trim(),
-                    response: content.replace(/<thinking>[\s\S]*?<\/thinking>/g, '').trim()
-                };
+        // Helper function to check if user is scrolled to bottom
+        function isScrolledToBottom() {
+            const threshold = 100; // pixels from bottom
+            const scrollBottom = elements.chatMessages.scrollHeight - elements.chatMessages.scrollTop - elements.chatMessages.clientHeight;
+            return scrollBottom < threshold;
+        }
+
+        // Helper function to scroll to bottom only if user is already there
+        function smartScroll() {
+            if (isScrolledToBottom()) {
+                elements.chatMessages.scrollTop = elements.chatMessages.scrollHeight;
             }
-            // Look for other thinking patterns
+        }
+
+        // Enhanced API call with retry logic
+        async function callOllamaAPIWithRetry(retryCount = 0) {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), API_TIMEOUT);
+
+            try {
+                updateConnectionStatus('connecting');
+
+                const requestBody = {
+                    model: appState.currentModel,
+                    messages: [
+                        { role: 'system', content: appState.systemPrompt },
+                        ...appState.conversationHistory
+                    ],
+                    stream: true,  // Enable streaming for real-time word-by-word display
+                    options: appState.params
+                };
+
+                console.log('Sending request to:', `${OLLAMA_API_URL}/api/chat`);
+                console.log('With model:', appState.currentModel);
+
+                const response = await fetch(`${OLLAMA_API_URL}/api/chat`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(requestBody),
+                    signal: controller.signal
+                });
+
+                clearTimeout(timeoutId);
+
+                console.log('Response status:', response.status);
+
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new OllamaAPIError(
+                        response.status,
+                        errorData.error || `HTTP ${response.status}: ${response.statusText}`,
+                        errorData
+                    );
+                }
+
+                // Handle streaming response
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let fullResponse = '';
+                let thinking = '';
+                let hasThinking = false;
+                let tokenStats = {};
+                let firstChunk = true;
+                let thinkingStartTime = null;
+                let thinkingEndTime = null;
+
+                updateConnectionStatus('connected');
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+
+                    const chunk = decoder.decode(value, { stream: true });
+                    const lines = chunk.split('\n').filter(line => line.trim());
+
+                    for (const line of lines) {
+                        try {
+                            const parsed = JSON.parse(line);
+
+                            // Capture token statistics from the final chunk
+                            if (parsed.prompt_eval_count) tokenStats.prompt_eval_count = parsed.prompt_eval_count;
+                            if (parsed.eval_count) tokenStats.eval_count = parsed.eval_count;
+                            if (parsed.eval_duration) tokenStats.eval_duration = parsed.eval_duration;
+
+                            // Handle thinking (chain of thought)
+                            if (parsed.message?.thinking) {
+                                thinking += parsed.message.thinking;
+                                hasThinking = true;
+
+                                // Start timing on first thinking chunk
+                                if (!thinkingStartTime) {
+                                    thinkingStartTime = Date.now();
+                                }
+
+                                // On first chunk with thinking, create message element with thinking box
+                                if (firstChunk) {
+                                    hideTypingIndicator();
+                                    addMessageToUI('ai', '');
+
+                                    // Add thinking box to the message
+                                    const lastMessage = elements.chatMessages.lastElementChild;
+                                    if (lastMessage && lastMessage.classList.contains('ai')) {
+                                        const messageContent = lastMessage.querySelector('.message-content');
+                                        const roleDiv = messageContent.querySelector('.message-role');
+
+                                        const cotDiv = document.createElement('div');
+                                        cotDiv.className = 'chain-of-thought streaming';
+                                        cotDiv.innerHTML = `
+                                            <div class="chain-of-thought-header">
+                                                <span class="chain-of-thought-toggle">▼</span> Thinking...
+                                            </div>
+                                            <div class="chain-of-thought-content"></div>
+                                        `;
+
+                                        // Insert after role div, before message text
+                                        roleDiv.after(cotDiv);
+
+                                        // Toggle collapse on click
+                                        cotDiv.addEventListener('click', (e) => {
+                                            if (e.target.closest('.chain-of-thought-header')) {
+                                                cotDiv.classList.toggle('collapsed');
+                                            }
+                                        });
+                                    }
+
+                                    firstChunk = false;
+                                }
+
+                                // Update thinking content in real-time
+                                const lastMessage = elements.chatMessages.lastElementChild;
+                                if (lastMessage && lastMessage.classList.contains('ai')) {
+                                    const cotContent = lastMessage.querySelector('.chain-of-thought-content');
+                                    if (cotContent) {
+                                        cotContent.innerHTML = formatMessage(thinking);
+                                        // Auto-scroll only if user is at bottom
+                                        smartScroll();
+                                    }
+                                }
+                            }
+
+                            // Handle regular content - mark end of thinking
+                            if (parsed.message?.content && hasThinking && !thinkingEndTime) {
+                                thinkingEndTime = Date.now();
+                            }
+
+                            // Handle regular content
+                            if (parsed.message?.content) {
+                                fullResponse += parsed.message.content;
+
+                                // On first chunk with content (and no thinking), create message element
+                                if (firstChunk) {
+                                    hideTypingIndicator();
+                                    addMessageToUI('ai', '');
+                                    firstChunk = false;
+                                }
+
+                                // Update the UI in real-time
+                                const lastMessage = elements.chatMessages.lastElementChild;
+                                if (lastMessage && lastMessage.classList.contains('ai')) {
+                                    const messageText = lastMessage.querySelector('.message-text');
+                                    if (messageText) {
+                                        messageText.innerHTML = formatMessage(fullResponse);
+                                        // Auto-scroll only if user is at bottom
+                                        smartScroll();
+                                    }
+                                }
+                            }
+                        } catch (e) {
+                            console.error('Error parsing chunk:', e);
+                        }
+                    }
+                }
+
+                appState.retryCount = 0;
+
+                // Update thinking header to final state if thinking was present
+                if (hasThinking) {
+                    const lastMessage = elements.chatMessages.lastElementChild;
+                    if (lastMessage && lastMessage.classList.contains('ai')) {
+                        const cotHeader = lastMessage.querySelector('.chain-of-thought-header');
+                        if (cotHeader) {
+                            // Calculate thinking duration
+                            const thinkingDuration = thinkingEndTime ?
+                                ((thinkingEndTime - thinkingStartTime) / 1000).toFixed(2) :
+                                '0.00';
+                            cotHeader.innerHTML = `<span class="chain-of-thought-toggle">▼</span> Thinking... <span style="font-size: 0.85em; opacity: 0.7;">(${thinkingDuration}s)</span>`;
+                        }
+                        const cotDiv = lastMessage.querySelector('.chain-of-thought');
+                        if (cotDiv) {
+                            cotDiv.classList.remove('streaming');
+                        }
+                    }
+                }
+
+                // Return in the same format as non-streaming
+                return {
+                    message: {
+                        role: 'assistant',
+                        content: fullResponse,
+                        thinking: hasThinking ? thinking : undefined
+                    },
+                    ...tokenStats
+                };
+
+            } catch (error) {
+                clearTimeout(timeoutId);
+
+                // Handle different error types
+                if (error.name === 'AbortError') {
+                    throw new OllamaAPIError('TIMEOUT', 'Request timed out. The model might be overloaded.');
+                }
+
+                if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
+                    throw new OllamaAPIError('NETWORK', 'Cannot connect to Ollama. Please check if Ollama is running.');
+                }
+
+                // Check for model loading error
+                if (error.originalError?.error?.includes('model')) {
+                    if (error.originalError.error.includes('not found')) {
+                        throw new OllamaAPIError('MODEL_NOT_FOUND', 'Model not found. Please select a valid model.');
+                    }
+                    if (error.originalError.error.includes('loading')) {
+                        throw new OllamaAPIError('MODEL_LOADING', 'Model is still loading. Please wait...');
+                    }
+                }
+
+                // Retry logic for specific errors
+                if (retryCount < MAX_RETRIES && shouldRetry(error)) {
+                    appState.retryCount = retryCount + 1;
+                    updateConnectionStatus('retrying');
+
+                    console.log(`Retrying... (${retryCount + 1}/${MAX_RETRIES})`);
+                    await delay(RETRY_DELAY * Math.pow(2, retryCount)); // Exponential backoff
+                    return callOllamaAPIWithRetry(retryCount + 1);
+                }
+
+                throw error;
+            }
+        }
+
+        function extractChainOfThought(content) {
+            // Look for various chain of thought tags (case-insensitive)
+            const tagPatterns = [
+                /<thinking>([\s\S]*?)<\/thinking>/i,
+                /<think>([\s\S]*?)<\/think>/i,
+                /<thought>([\s\S]*?)<\/thought>/i,
+                /<reasoning>([\s\S]*?)<\/reasoning>/i,
+                /<analysis>([\s\S]*?)<\/analysis>/i,
+                /<reflection>([\s\S]*?)<\/reflection>/i
+            ];
+
+            for (const pattern of tagPatterns) {
+                const match = content.match(pattern);
+                if (match) {
+                    return {
+                        thinking: match[1].trim(),
+                        response: content.replace(pattern, '').trim()
+                    };
+                }
+            }
+
+            // Look for text-based thinking patterns
             const reflectionMatch = content.match(/^(Thinking:|I'm thinking about|Let me think|First, let me|Before I respond)[\s\S]*?\n\n([\s\S]*)/);
             if (reflectionMatch && reflectionMatch[0].length > 50) {
                 const parts = content.split('\n\n');
@@ -2085,11 +2937,11 @@ pre code {
             // Add chain of thought section if present
             if (chainOfThought && role === 'ai') {
                 const cotDiv = document.createElement('div');
-                cotDiv.className = 'chain-of-thought' + (appState.collapseChainOfThought ? ' collapsed' : '');
+                cotDiv.className = 'chain-of-thought';
 
                 const cotHeader = document.createElement('div');
                 cotHeader.className = 'chain-of-thought-header';
-                cotHeader.innerHTML = `<span class="chain-of-thought-toggle">▼</span> Chain of Thought`;
+                cotHeader.innerHTML = `<span class="chain-of-thought-toggle">▼</span> Thinking...`;
 
                 const cotContent = document.createElement('div');
                 cotContent.className = 'chain-of-thought-content';
@@ -2127,7 +2979,7 @@ pre code {
             const copyBtn = document.createElement('button');
             copyBtn.className = 'message-action-btn';
             copyBtn.title = 'Copy';
-            copyBtn.innerHTML = 'C';
+            copyBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>';
             copyBtn.addEventListener('click', () => handleCopyMessage(content));
             actionsDiv.appendChild(copyBtn);
 
@@ -2136,14 +2988,14 @@ pre code {
                 const regenBtn = document.createElement('button');
                 regenBtn.className = 'message-action-btn';
                 regenBtn.title = 'Regenerate';
-                regenBtn.innerHTML = '↻';
+                regenBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="23 4 23 10 17 10"></polyline><polyline points="1 20 1 14 7 14"></polyline><path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"></path></svg>';
                 regenBtn.addEventListener('click', () => handleRegenerateMessage(messageDiv));
                 actionsDiv.appendChild(regenBtn);
             }
 
             messageDiv.appendChild(actionsDiv);
             elements.chatMessages.appendChild(messageDiv);
-            elements.chatMessages.scrollTop = elements.chatMessages.scrollHeight;
+            smartScroll();
         }
 
         function formatMessage(content) {
@@ -2154,16 +3006,50 @@ pre code {
                 return div.innerHTML;
             };
 
-            let formatted = content;
+            let formatted = escapeHtml(content);
 
-            // Format code blocks (no syntax highlighting)
+            // Format code blocks first (no syntax highlighting)
             formatted = formatted.replace(/```(\w+)?\n([\s\S]*?)```/g, (match, lang, code) => {
-                const escaped = escapeHtml(code);
-                return `<pre><code>${escaped}</code></pre>`;
+                return `<pre><code>${code}</code></pre>`;
             });
 
             // Format inline code (but not inside code blocks)
             formatted = formatted.replace(/`([^`]+)`/g, '<code>$1</code>');
+
+            // Format headings (# ## ### etc.)
+            formatted = formatted.replace(/^######\s+(.+)$/gm, '<h6>$1</h6>');
+            formatted = formatted.replace(/^#####\s+(.+)$/gm, '<h5>$1</h5>');
+            formatted = formatted.replace(/^####\s+(.+)$/gm, '<h4>$1</h4>');
+            formatted = formatted.replace(/^###\s+(.+)$/gm, '<h3>$1</h3>');
+            formatted = formatted.replace(/^##\s+(.+)$/gm, '<h2>$1</h2>');
+            formatted = formatted.replace(/^#\s+(.+)$/gm, '<h1>$1</h1>');
+
+            // Format bold text **text** or __text__
+            formatted = formatted.replace(/\*\*([^\*]+)\*\*/g, '<strong>$1</strong>');
+            formatted = formatted.replace(/__([^_]+)__/g, '<strong>$1</strong>');
+
+            // Format italic text *text* or _text_ (but not ** which is bold)
+            formatted = formatted.replace(/\*([^\*]+)\*/g, '<em>$1</em>');
+            formatted = formatted.replace(/_([^_]+)_/g, '<em>$1</em>');
+
+            // Format strikethrough ~~text~~
+            formatted = formatted.replace(/~~([^~]+)~~/g, '<del>$1</del>');
+
+            // Format links [text](url)
+            formatted = formatted.replace(/\[([^\]]+)\]\(([^\)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+
+            // Format blockquotes > text
+            formatted = formatted.replace(/^&gt;\s+(.+)$/gm, '<blockquote>$1</blockquote>');
+
+            // Format unordered lists (- or * at start of line)
+            formatted = formatted.replace(/^\s*[-*]\s+(.+)$/gm, '<li>$1</li>');
+            formatted = formatted.replace(/(<li>.*<\/li>)/s, '<ul>$1</ul>');
+
+            // Format ordered lists (1. 2. 3. etc.)
+            formatted = formatted.replace(/^\s*\d+\.\s+(.+)$/gm, '<li>$1</li>');
+
+            // Format horizontal rules (--- or ***)
+            formatted = formatted.replace(/^[\-\*]{3,}$/gm, '<hr>');
 
             // Format line breaks
             formatted = formatted.replace(/\n/g, '<br>');
@@ -2190,7 +3076,7 @@ pre code {
                 </div>
             `;
             elements.chatMessages.appendChild(indicator);
-            elements.chatMessages.scrollTop = elements.chatMessages.scrollHeight;
+            smartScroll();
         }
 
         function hideTypingIndicator() {
@@ -2234,35 +3120,15 @@ pre code {
                 return;
             }
 
-            // Regenerate response
+            // Regenerate response with thinking animation
             showTypingIndicator();
             elements.sendBtn.disabled = true;
 
             try {
-                const response = await fetch(`${OLLAMA_API_URL}/api/chat`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({
-                        model: appState.currentModel,
-                        messages: [
-                            { role: 'system', content: appState.systemPrompt },
-                            ...appState.conversationHistory
-                        ],
-                        stream: false,
-                        options: appState.params
-                    }),
-                });
+                // Use the same streaming API call
+                // Thinking indicator will be hidden when first text arrives
+                const data = await callOllamaAPIWithRetry();
 
-                if (!response.ok) {
-                    throw new Error(`API request failed with status ${response.status}`);
-                }
-
-                const data = await response.json();
-                hideTypingIndicator();
-
-                addMessageToUI('ai', data.message.content);
                 appState.conversationHistory.push(data.message);
 
                 const promptTokens = data.prompt_eval_count || 0;
@@ -2274,7 +3140,6 @@ pre code {
                 saveState();
 
             } catch (error) {
-                hideTypingIndicator();
                 showError('Failed to regenerate message');
             } finally {
                 elements.sendBtn.disabled = false;
@@ -2498,7 +3363,7 @@ pre code {
 
                 const renameBtn = document.createElement('button');
                 renameBtn.className = 'chat-item-action-btn';
-                renameBtn.innerHTML = '✏️';
+                renameBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>';
                 renameBtn.title = 'Rename';
                 renameBtn.addEventListener('click', (e) => {
                     e.stopPropagation();
@@ -2507,7 +3372,7 @@ pre code {
 
                 const exportBtn = document.createElement('button');
                 exportBtn.className = 'chat-item-action-btn';
-                exportBtn.innerHTML = '💾';
+                exportBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>';
                 exportBtn.title = 'Export';
                 exportBtn.addEventListener('click', (e) => {
                     e.stopPropagation();
@@ -2516,7 +3381,7 @@ pre code {
 
                 const deleteBtn = document.createElement('button');
                 deleteBtn.className = 'chat-item-action-btn delete';
-                deleteBtn.innerHTML = '🗑️';
+                deleteBtn.innerHTML = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>';
                 deleteBtn.title = 'Delete';
                 deleteBtn.addEventListener('click', (e) => {
                     e.stopPropagation();
@@ -2534,8 +3399,7 @@ pre code {
                 historyContainer.appendChild(chatItem);
             });
 
-            // Update search functionality
-            handleChatSearch({target: {value: document.getElementById('chatSearch').value}});
+            
         }
 
         function loadSavedChat(chatId) {
@@ -2572,12 +3436,27 @@ pre code {
                 }
             }
 
+            // Clear the chat
             appState.conversationHistory = [];
-            appState.currentLoadedChatId = null; // Clear the loaded chat reference
+            appState.currentLoadedChatId = null;
             elements.chatMessages.innerHTML = '';
             elements.chatTitle.textContent = 'Charlie Llama Chat';
             elements.tokenCounter.textContent = 'Ready';
             saveState();
+        }
+
+        function handleClearChat() {
+            // Clear chat without asking to save
+            if (appState.conversationHistory.length > 0) {
+                if (confirm('Clear this chat? This cannot be undone.')) {
+                    appState.conversationHistory = [];
+                    appState.currentLoadedChatId = null;
+                    elements.chatMessages.innerHTML = '';
+                    elements.chatTitle.textContent = 'Charlie Llama Chat';
+                    elements.tokenCounter.textContent = 'Ready';
+                    saveState();
+                }
+            }
         }
 
         // ============================================ 
@@ -2642,7 +3521,7 @@ pre code {
                         document.getElementById('topPValue').textContent = value;
                         appState.params.top_p = parseFloat(value);
                     } else if (param === 'num_predict') {
-                        document.getElementById('maxTokensValue').textContent = value;
+                        document.getElementById('maxTokensValue').textContent = parseInt(value).toLocaleString();
                         appState.params.num_predict = parseInt(value);
                     } else if (param === 'repeat_penalty') {
                         document.getElementById('repeatPenaltyValue').textContent = value;
@@ -2690,22 +3569,39 @@ pre code {
                     document.body.setAttribute('data-theme', theme);
                     appState.theme = theme;
                     elements.themeSelect.value = theme;
+
+                    // Update Safari/browser theme color (title bar color)
+                    const themeColors = {
+                        'light': '#F8F9FA',
+                        'dark': '#2A2A2A',
+                        'retro-light': '#0A0E27',
+                        'retro-dark': '#000000'
+                    };
+
+                    const metaThemeColor = document.querySelector('meta[name="theme-color"]');
+                    if (metaThemeColor) {
+                        metaThemeColor.setAttribute('content', themeColors[theme] || '#0A0E27');
+                    }
+
                     saveState();
                 }
 
                 function toggleDarkLightMode() {
+                    // Toggle between light/dark pairs
                     const currentTheme = appState.theme;
-                    let newTheme = currentTheme;
+                    let newTheme;
 
-                    // Toggle between light and dark variants of the same theme
-                    if (currentTheme.includes('-light')) {
-                        newTheme = currentTheme.replace('-light', '-dark');
-                    } else if (currentTheme.includes('-dark')) {
-                        newTheme = currentTheme.replace('-dark', '-light');
-                    } else if (currentTheme === 'light') {
+                    if (currentTheme === 'light') {
                         newTheme = 'dark';
                     } else if (currentTheme === 'dark') {
                         newTheme = 'light';
+                    } else if (currentTheme === 'retro-light') {
+                        newTheme = 'retro-dark';
+                    } else if (currentTheme === 'retro-dark') {
+                        newTheme = 'retro-light';
+                    } else {
+                        // Default fallback
+                        newTheme = 'retro-light';
                     }
 
                     setTheme(newTheme);
@@ -2807,15 +3703,7 @@ pre code {
                         elements.container.classList.add('sidebar-closed');
                     }
 
-                    // Restore hide thinking setting
-                    if (elements.hideThinkingCheckbox) {
-                        elements.hideThinkingCheckbox.checked = appState.hideThinking;
-                    }
-
-                    // Restore chain of thought collapse setting
-                    if (elements.collapseChainOfThoughtCheckbox) {
-                        elements.collapseChainOfThoughtCheckbox.checked = appState.collapseChainOfThought;
-                    }
+                    
 
                     // Restore messages
                     appState.conversationHistory.forEach(msg => {

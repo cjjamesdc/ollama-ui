@@ -1,573 +1,596 @@
-// ============================================
-// OLLAMA GUI - JAVASCRIPT TEMPLATE
-// Claude Code: Fill in the TODOs with your existing logic
-// ============================================
+/*
+====================================
+OLLAMA GUI - APP TEMPLATE
+Main Application Logic
+====================================
+*/
 
-// ============================================
-// STATE MANAGEMENT
-// ============================================
+(function() {
+    'use strict';
 
-const appState = {
-    currentModel: 'llama3.2:3b',
-    chatHistory: [],
-    systemPrompt: 'You are a helpful assistant.',
-    params: {
-        temperature: 0.7,
-        top_p: 0.9,
-        max_tokens: 2000,
-        repeat_penalty: 1.1
-    },
-    theme: 'light'
-};
-
-// ============================================
-// DOM ELEMENTS
-// ============================================
-
-const elements = {
-    // Chat
-    chatMessages: document.getElementById('chatMessages'),
-    chatInput: document.getElementById('chatInput'),
-    sendBtn: document.getElementById('sendBtn'),
-    chatTitle: document.getElementById('chatTitle'),
-    
-    // Sidebar
-    modelSelect: document.getElementById('modelSelect'),
-    newChatBtn: document.getElementById('newChatBtn'),
-    chatHistory: document.getElementById('chatHistory'),
-    themeToggle: document.getElementById('themeToggle'),
-    
-    // System Prompt
-    systemPromptToggle: document.getElementById('systemPromptToggle'),
-    systemPromptEditor: document.getElementById('systemPromptEditor'),
-    systemPromptInput: document.getElementById('systemPromptInput'),
-    applyPromptBtn: document.getElementById('applyPromptBtn'),
-    resetPromptBtn: document.getElementById('resetPromptBtn'),
-    
-    // Settings Modal
-    settingsModal: document.getElementById('settingsModal'),
-    settingsBtn: document.getElementById('settingsBtn'),
-    closeSettingsBtn: document.getElementById('closeSettingsBtn'),
-    
-    // Export
-    exportBtn: document.getElementById('exportBtn'),
-    exportDropdown: document.getElementById('exportDropdown'),
-    
-    // Token Counter (you already have this)
-    tokenCounter: document.getElementById('tokenCounter'),
-    
-    // Status Badge
-    statusBadge: document.getElementById('statusBadge')
-};
-
-// ============================================
-// INITIALIZATION
-// ============================================
-
-function init() {
-    loadState();
-    setupEventListeners();
-    setupParameterSliders();
-    autoResizeTextarea();
-    
-    // TODO: Claude Code - Add your existing initialization logic
-    // - Connect to Ollama backend
-    // - Load available models
-    // - Restore previous chat if exists
-}
-
-// ============================================
-// EVENT LISTENERS
-// ============================================
-
-function setupEventListeners() {
-    // Send message
-    elements.sendBtn.addEventListener('click', handleSendMessage);
-    elements.chatInput.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            handleSendMessage();
-        }
-    });
-    
-    // Model selector
-    elements.modelSelect.addEventListener('change', (e) => {
-        appState.currentModel = e.target.value;
-        saveState();
-        // TODO: Claude Code - Reload model if needed
-    });
-    
-    // New chat
-    elements.newChatBtn.addEventListener('click', handleNewChat);
-    
-    // Theme toggle
-    elements.themeToggle.addEventListener('click', toggleTheme);
-    
-    // System prompt
-    elements.systemPromptToggle.addEventListener('click', toggleSystemPrompt);
-    elements.applyPromptBtn.addEventListener('click', applySystemPrompt);
-    elements.resetPromptBtn.addEventListener('click', resetSystemPrompt);
-    
-    // Settings modal
-    elements.settingsBtn.addEventListener('click', openSettings);
-    elements.closeSettingsBtn.addEventListener('click', closeSettings);
-    elements.settingsModal.addEventListener('click', (e) => {
-        if (e.target === elements.settingsModal) closeSettings();
-    });
-    
-    // Export
-    elements.exportBtn.addEventListener('click', toggleExportMenu);
-    document.getElementById('exportMarkdown').addEventListener('click', exportAsMarkdown);
-    document.getElementById('exportJSON').addEventListener('click', exportAsJSON);
-}
-
-// ============================================
-// CHAT FUNCTIONS
-// ============================================
-
-async function handleSendMessage() {
-    const message = elements.chatInput.value.trim();
-    if (!message) return;
-    
-    // Clear input
-    elements.chatInput.value = '';
-    elements.chatInput.style.height = 'auto';
-    
-    // Add user message to UI
-    addMessageToUI('user', message);
-    
-    // Add to chat history
-    appState.chatHistory.push({
-        role: 'user',
-        content: message
-    });
-    
-    // TODO: Claude Code - Replace with your Ollama API call
-    try {
-        showTypingIndicator();
-        
-        // Your existing API call here
-        const response = await sendToOllama(message);
-        
-        hideTypingIndicator();
-        
-        // Add AI response to UI
-        addMessageToUI('ai', response.content);
-        
-        // Add to chat history
-        appState.chatHistory.push({
-            role: 'assistant',
-            content: response.content
-        });
-        
-        saveState();
-    } catch (error) {
-        hideTypingIndicator();
-        showError('Failed to send message: ' + error.message);
-    }
-}
-
-// TODO: Claude Code - Replace with your actual Ollama API call
-async function sendToOllama(message) {
-    // This is a placeholder - use your existing Ollama integration
-    const response = await fetch('/api/chat', {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
+    // ===========================
+    // STATE MANAGEMENT
+    // ===========================
+    const appState = {
+        models: [],
+        currentModel: null,
+        conversationHistory: [],
+        currentChatId: null,
+        chats: {},
+        settings: {
+            temperature: 0.7,
+            top_p: 0.9,
+            max_tokens: 2000,
+            repeat_penalty: 1.1,
+            theme: 'light',
+            systemPrompt: 'You are a helpful assistant.'
         },
-        body: JSON.stringify({
-            model: appState.currentModel,
-            messages: [
-                { role: 'system', content: appState.systemPrompt },
-                ...appState.chatHistory,
-                { role: 'user', content: message }
-            ],
-            options: appState.params
-        })
-    });
-    
-    if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
-    }
-    
-    return await response.json();
-}
-
-function addMessageToUI(role, content) {
-    const messageDiv = document.createElement('div');
-    messageDiv.className = `message ${role}`;
-    
-    const avatar = document.createElement('div');
-    avatar.className = 'message-avatar';
-    avatar.textContent = role === 'user' ? 'U' : 'A';
-    
-    const contentDiv = document.createElement('div');
-    contentDiv.className = 'message-content';
-    
-    const roleDiv = document.createElement('div');
-    roleDiv.className = 'message-role';
-    roleDiv.textContent = role === 'user' ? 'You' : appState.currentModel;
-    
-    const textDiv = document.createElement('div');
-    textDiv.className = 'message-text';
-    textDiv.innerHTML = formatMessage(content);
-    
-    contentDiv.appendChild(roleDiv);
-    contentDiv.appendChild(textDiv);
-    messageDiv.appendChild(avatar);
-    messageDiv.appendChild(contentDiv);
-    
-    elements.chatMessages.appendChild(messageDiv);
-    elements.chatMessages.scrollTop = elements.chatMessages.scrollHeight;
-}
-
-function formatMessage(content) {
-    // TODO: Claude Code - Add code syntax highlighting if needed
-    // Basic formatting for now
-    content = escapeHtml(content);
-    
-    // Format code blocks
-    content = content.replace(/```(\w+)?\n([\s\S]*?)```/g, (match, lang, code) => {
-        return `<pre><code class="language-${lang || 'plaintext'}">${code}</code></pre>`;
-    });
-    
-    // Format inline code
-    content = content.replace(/`([^`]+)`/g, '<code>$1</code>');
-    
-    // Format line breaks
-    content = content.replace(/\n/g, '<br>');
-    
-    return content;
-}
-
-function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-}
-
-function showTypingIndicator() {
-    const indicator = document.createElement('div');
-    indicator.id = 'typingIndicator';
-    indicator.className = 'message ai';
-    indicator.innerHTML = `
-        <div class="message-avatar">A</div>
-        <div class="message-content">
-            <div class="message-role">${appState.currentModel}</div>
-            <div class="message-text">
-                <span class="loading-dots">Thinking</span>
-            </div>
-        </div>
-    `;
-    elements.chatMessages.appendChild(indicator);
-    elements.chatMessages.scrollTop = elements.chatMessages.scrollHeight;
-}
-
-function hideTypingIndicator() {
-    const indicator = document.getElementById('typingIndicator');
-    if (indicator) indicator.remove();
-}
-
-function handleNewChat() {
-    if (appState.chatHistory.length > 0) {
-        // TODO: Claude Code - Save current chat to history before clearing
-    }
-    
-    appState.chatHistory = [];
-    elements.chatMessages.innerHTML = '';
-    elements.chatTitle.textContent = 'New Chat';
-    saveState();
-}
-
-// ============================================
-// SYSTEM PROMPT
-// ============================================
-
-function toggleSystemPrompt() {
-    elements.systemPromptToggle.classList.toggle('active');
-    elements.systemPromptEditor.classList.toggle('active');
-}
-
-function applySystemPrompt() {
-    appState.systemPrompt = elements.systemPromptInput.value;
-    saveState();
-    toggleSystemPrompt();
-    showSuccess('System prompt updated');
-}
-
-function resetSystemPrompt() {
-    const defaultPrompt = 'You are a helpful assistant.';
-    elements.systemPromptInput.value = defaultPrompt;
-    appState.systemPrompt = defaultPrompt;
-    saveState();
-    showSuccess('System prompt reset');
-}
-
-// ============================================
-// SETTINGS & PARAMETERS
-// ============================================
-
-function setupParameterSliders() {
-    const sliders = document.querySelectorAll('.param-slider');
-    
-    sliders.forEach(slider => {
-        slider.addEventListener('input', (e) => {
-            const param = e.target.id;
-            const value = parseFloat(e.target.value);
-            
-            // Update display
-            const valueDisplay = document.getElementById(`${param}Value`);
-            if (valueDisplay) {
-                if (param === 'font_size') {
-                    valueDisplay.textContent = value + 'px';
-                    document.documentElement.style.setProperty('--font-md', value + 'px');
-                } else {
-                    valueDisplay.textContent = value;
-                    appState.params[param] = value;
-                }
-            }
-            
-            saveState();
-        });
-    });
-}
-
-function openSettings() {
-    elements.settingsModal.classList.add('active');
-}
-
-function closeSettings() {
-    elements.settingsModal.classList.remove('active');
-}
-
-// ============================================
-// EXPORT FUNCTIONS
-// ============================================
-
-function toggleExportMenu() {
-    const dropdown = elements.exportDropdown;
-    const rect = elements.exportBtn.getBoundingClientRect();
-    
-    dropdown.style.position = 'fixed';
-    dropdown.style.top = rect.bottom + 8 + 'px';
-    dropdown.style.right = window.innerWidth - rect.right + 'px';
-    dropdown.style.opacity = '1';
-    dropdown.style.pointerEvents = 'auto';
-    
-    // Close on click outside
-    setTimeout(() => {
-        document.addEventListener('click', closeExportMenu, { once: true });
-    }, 0);
-}
-
-function closeExportMenu() {
-    elements.exportDropdown.style.opacity = '0';
-    elements.exportDropdown.style.pointerEvents = 'none';
-}
-
-function exportAsMarkdown() {
-    let markdown = `# ${elements.chatTitle.textContent}\n\n`;
-    markdown += `**Model:** ${appState.currentModel}\n`;
-    markdown += `**Date:** ${new Date().toLocaleString()}\n\n---\n\n`;
-    
-    appState.chatHistory.forEach(msg => {
-        const role = msg.role === 'user' ? '**You**' : `**${appState.currentModel}**`;
-        markdown += `${role}:\n${msg.content}\n\n`;
-    });
-    
-    downloadFile(markdown, 'chat-export.md', 'text/markdown');
-    closeExportMenu();
-    showSuccess('Chat exported as Markdown');
-}
-
-function exportAsJSON() {
-    const data = {
-        title: elements.chatTitle.textContent,
-        model: appState.currentModel,
-        timestamp: new Date().toISOString(),
-        systemPrompt: appState.systemPrompt,
-        params: appState.params,
-        messages: appState.chatHistory
+        ui: {
+            isSidebarCollapsed: false,
+            isSettingsModalOpen: false,
+            isSystemPromptEditorOpen: false,
+        },
+        connection: {
+            isOllamaRunning: false,
+            lastCheck: null,
+            retries: 0,
+        },
+        thinking: false,
     };
-    
-    downloadFile(
-        JSON.stringify(data, null, 2), 
-        'chat-export.json', 
-        'application/json'
-    );
-    closeExportMenu();
-    showSuccess('Chat exported as JSON');
-}
 
-function downloadFile(content, filename, type) {
-    const blob = new Blob([content], { type });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = filename;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-}
+    // ===========================
+    // DOM ELEMENTS
+    // ===========================
+    const elements = {
+        // Sidebar
+        sidebar: document.querySelector('.sidebar'),
+        newChatBtn: document.querySelector('.new-chat-btn'),
+        modelSelect: document.getElementById('model-select'),
+        systemPromptToggle: document.querySelector('.system-prompt-toggle'),
+        systemPromptEditor: document.querySelector('.system-prompt-editor'),
+        systemPromptInput: document.getElementById('system-prompt-input'),
+        resetPromptBtn: document.getElementById('reset-prompt-btn'),
+        applyPromptBtn: document.getElementById('apply-prompt-btn'),
+        chatHistory: document.querySelector('.chat-history'),
+        temperatureSlider: document.getElementById('temperature'),
+        temperatureValue: document.getElementById('temperatureValue'),
+        topPSlider: document.getElementById('top_p'),
+        topPValue: document.getElementById('top_pValue'),
+        themeToggle: document.getElementById('theme-toggle'),
 
-// ============================================
-// THEME
-// ============================================
+        // Main Content
+        mainContent: document.querySelector('.main-content'),
+        chatHeader: document.querySelector('.chat-header'),
+        chatTitle: document.querySelector('.chat-title'),
+        settingsBtn: document.getElementById('settings-btn'),
+        exportBtn: document.getElementById('export-btn'),
+        chatMessages: document.getElementById('chatMessages'),
+        chatInputContainer: document.querySelector('.chat-input-container'),
+        chatInput: document.getElementById('chatInput'),
+        tokenCounter: document.getElementById('token-counter'),
+        sendBtn: document.getElementById('sendBtn'),
 
-function toggleTheme() {
-    const body = document.body;
-    const currentTheme = body.getAttribute('data-theme');
-    const newTheme = currentTheme === 'light' ? 'dark' : 'light';
-    
-    body.setAttribute('data-theme', newTheme);
-    appState.theme = newTheme;
-    
-    // Update button text
-    const icon = document.getElementById('themeIcon');
-    const text = document.getElementById('themeText');
-    
-    if (newTheme === 'dark') {
-        icon.textContent = '☀️';
-        text.textContent = 'Light Mode';
-    } else {
-        icon.textContent = '🌙';
-        text.textContent = 'Dark Mode';
-    }
-    
-    saveState();
-}
-
-// ============================================
-// UTILITIES
-// ============================================
-
-function autoResizeTextarea() {
-    elements.chatInput.addEventListener('input', function() {
-        this.style.height = 'auto';
-        this.style.height = Math.min(this.scrollHeight, 200) + 'px';
+        // Settings Modal
+        settingsModal: document.getElementById('settingsModal'),
+        closeSettingsBtn: document.getElementById('closeSettingsBtn'),
+        maxTokensSlider: document.getElementById('max_tokens'),
+        maxTokensValue: document.getElementById('max_tokensValue'),
+        repeatPenaltySlider: document.getElementById('repeat_penalty'),
+        repeatPenaltyValue: document.getElementById('repeat_penaltyValue'),
         
-        // TODO: Claude Code - Update token counter here if you have it
-        // updateTokenCounter(this.value);
-    });
-}
+        // Body & Container
+        body: document.body,
+        container: document.querySelector('.container'),
+    };
 
-function showSuccess(message) {
-    showNotification(message, 'success');
-}
+    // ===========================
+    // INITIALIZATION
+    // ===========================
 
-function showError(message) {
-    showNotification(message, 'error');
-}
-
-function showNotification(message, type = 'info') {
-    // TODO: Claude Code - Implement toast notifications if desired
-    console.log(`[${type.toUpperCase()}] ${message}`);
-    
-    // Simple alert for now
-    const badge = elements.statusBadge;
-    const originalText = badge.textContent;
-    badge.textContent = message;
-    badge.className = `badge badge-${type}`;
-    
-    setTimeout(() => {
-        badge.textContent = originalText;
-        badge.className = 'badge badge-success';
-    }, 3000);
-}
-
-// ============================================
-// STATE PERSISTENCE
-// ============================================
-
-function saveState() {
-    try {
-        localStorage.setItem('ollama-app-state', JSON.stringify(appState));
-    } catch (error) {
-        console.error('Failed to save state:', error);
+    function init() {
+        console.log("Initializing Ollama GUI...");
+        loadSettings();
+        bindEventListeners();
+        checkOllamaConnection();
+        loadModels();
+        loadChats();
+        startNewChat();
+        updateTheme();
+        initSliders();
+        setInterval(checkOllamaConnection, 30000); // Check connection every 30 seconds
     }
-}
 
-function loadState() {
-    try {
-        const saved = localStorage.getItem('ollama-app-state');
-        if (saved) {
-            const parsed = JSON.parse(saved);
-            Object.assign(appState, parsed);
-            
-            // Restore UI state
-            document.body.setAttribute('data-theme', appState.theme);
+    // ===========================
+    // EVENT LISTENERS
+    // ===========================
+
+    function bindEventListeners() {
+        elements.newChatBtn.addEventListener('click', startNewChat);
+        elements.sendBtn.addEventListener('click', handleSendMessage);
+        elements.chatInput.addEventListener('keydown', handleInputKeyDown);
+        elements.modelSelect.addEventListener('change', handleModelChange);
+        elements.themeToggle.addEventListener('click', toggleTheme);
+        elements.settingsBtn.addEventListener('click', toggleSettingsModal);
+        elements.closeSettingsBtn.addEventListener('click', toggleSettingsModal);
+        elements.systemPromptToggle.addEventListener('click', toggleSystemPromptEditor);
+        elements.applyPromptBtn.addEventListener('click', applySystemPrompt);
+        elements.resetPromptBtn.addEventListener('click', resetSystemPrompt);
+        elements.chatTitle.addEventListener('blur', handleChatTitleChange);
+        elements.chatTitle.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                elements.chatTitle.blur();
+            }
+        });
+        elements.exportBtn.addEventListener('click', exportCurrentChat);
+    }
+
+    // ===========================
+    // OLLAMA CONNECTION
+    // ===========================
+
+    async function checkOllamaConnection() {
+        try {
+            const response = await fetch('http://localhost:11434');
+            if (response.ok) {
+                if (!appState.connection.isOllamaRunning) {
+                    console.log("Ollama connection successful.");
+                    appState.connection.isOllamaRunning = true;
+                    appState.connection.retries = 0;
+                    updateStatusIndicator(true, 'Ready');
+                    loadModels();
+                }
+            } else {
+                throw new Error('Ollama not responding');
+            }
+        } catch (error) {
+            if (appState.connection.isOllamaRunning || appState.connection.retries === 0) {
+                console.error("Ollama connection failed:", error.message);
+                appState.connection.isOllamaRunning = false;
+                updateStatusIndicator(false, `Connection failed. Retrying...`);
+            }
+            appState.connection.retries++;
+        }
+        appState.connection.lastCheck = new Date();
+    }
+
+    function updateStatusIndicator(isOnline, text) {
+        // This is a placeholder. A more advanced status indicator can be built.
+        const statusBadge = document.createElement('div');
+        statusBadge.className = `badge ${isOnline ? 'badge-success' : 'badge-error'}`;
+        statusBadge.textContent = text;
+        
+        const existingBadge = elements.chatHeader.querySelector('.badge');
+        if (existingBadge) existingBadge.remove();
+        
+        elements.chatHeader.appendChild(statusBadge);
+    }
+
+    // ===========================
+    // MODEL MANAGEMENT
+    // ===========================
+
+    async function loadModels() {
+        if (!appState.connection.isOllamaRunning) return;
+        try {
+            const response = await fetch('http://localhost:11434/api/tags');
+            const data = await response.json();
+            appState.models = data.models.map(model => model.name);
+            console.log("Available models:", appState.models);
+            renderModelSelector();
+        } catch (error) {
+            console.error("Failed to load models:", error);
+        }
+    }
+
+    function renderModelSelector() {
+        elements.modelSelect.innerHTML = '';
+        appState.models.forEach(modelName => {
+            const option = document.createElement('option');
+            option.value = modelName;
+            option.textContent = modelName;
+            if (modelName === appState.currentModel) {
+                option.selected = true;
+            }
+            elements.modelSelect.appendChild(option);
+        });
+        if (!appState.currentModel && appState.models.length > 0) {
+            appState.currentModel = appState.models[0];
             elements.modelSelect.value = appState.currentModel;
-            elements.systemPromptInput.value = appState.systemPrompt;
-            
-            // Restore parameters
-            Object.keys(appState.params).forEach(key => {
-                const slider = document.getElementById(key);
-                if (slider) {
-                    slider.value = appState.params[key];
-                    const valueDisplay = document.getElementById(`${key}Value`);
-                    if (valueDisplay) {
-                        valueDisplay.textContent = appState.params[key];
+        }
+    }
+
+    function handleModelChange(event) {
+        appState.currentModel = event.target.value;
+        saveSettings();
+        console.log(`Model changed to: ${appState.currentModel}`);
+    }
+
+    // ===========================
+    // CHAT MANAGEMENT
+    // ===========================
+
+    function startNewChat() {
+        const newChatId = `chat_${Date.now()}`;
+        appState.currentChatId = newChatId;
+        appState.chats[newChatId] = {
+            id: newChatId,
+            title: 'New Chat',
+            history: [],
+            createdAt: new Date(),
+            systemPrompt: appState.settings.systemPrompt,
+        };
+        appState.conversationHistory = [];
+        renderChatHistory();
+        renderMessages();
+        updateChatTitle();
+        elements.chatInput.focus();
+        console.log(`Started new chat: ${newChatId}`);
+    }
+
+    function switchChat(chatId) {
+        if (!appState.chats[chatId]) return;
+        appState.currentChatId = chatId;
+        appState.conversationHistory = appState.chats[chatId].history;
+        renderMessages();
+        renderChatHistory(); // To update the active state
+        updateChatTitle();
+        elements.systemPromptInput.value = appState.chats[chatId].systemPrompt;
+        console.log(`Switched to chat: ${chatId}`);
+    }
+
+    function deleteChat(chatId) {
+        if (confirm('Are you sure you want to delete this chat?')) {
+            delete appState.chats[chatId];
+            saveChats();
+            if (appState.currentChatId === chatId) {
+                startNewChat();
+            } else {
+                renderChatHistory();
+            }
+            console.log(`Deleted chat: ${chatId}`);
+        }
+    }
+
+    function handleChatTitleChange(event) {
+        const newTitle = event.target.textContent.trim();
+        if (newTitle && appState.currentChatId) {
+            appState.chats[appState.currentChatId].title = newTitle;
+            saveChats();
+            renderChatHistory(); // Update title in the sidebar
+        }
+    }
+
+    function updateChatTitle() {
+        if (appState.currentChatId) {
+            elements.chatTitle.textContent = appState.chats[appState.currentChatId].title;
+        }
+    }
+
+    function renderChatHistory() {
+        elements.chatHistory.innerHTML = '';
+        const sortedChats = Object.values(appState.chats).sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+        
+        sortedChats.forEach(chat => {
+            const chatItem = document.createElement('div');
+            chatItem.className = 'chat-item';
+            chatItem.textContent = chat.title;
+            chatItem.dataset.chatId = chat.id;
+            if (chat.id === appState.currentChatId) {
+                chatItem.classList.add('active');
+            }
+
+            const deleteBtn = document.createElement('button');
+            deleteBtn.innerHTML = '🗑️';
+            deleteBtn.className = 'chat-item-action-btn delete';
+            deleteBtn.onclick = (e) => {
+                e.stopPropagation();
+                deleteChat(chat.id);
+            };
+
+            const actions = document.createElement('div');
+            actions.className = 'chat-item-actions';
+            actions.appendChild(deleteBtn);
+
+            chatItem.appendChild(actions);
+            chatItem.addEventListener('click', () => switchChat(chat.id));
+            elements.chatHistory.appendChild(chatItem);
+        });
+    }
+
+    // ===========================
+    // MESSAGE HANDLING
+    // ===========================
+
+    async function handleSendMessage() {
+        const userInput = elements.chatInput.value.trim();
+        if (!userInput || appState.thinking) return;
+
+        appState.thinking = true;
+        elements.sendBtn.disabled = true;
+        elements.chatInput.value = '';
+
+        addMessageToUI(userInput, 'user');
+        appState.conversationHistory.push({ role: 'user', content: userInput });
+
+        showTypingIndicator();
+
+        try {
+            const response = await fetch('http://localhost:11434/api/chat', {
+                method: 'POST',
+                body: JSON.stringify({
+                    model: appState.currentModel,
+                    messages: [
+                        { role: 'system', content: appState.chats[appState.currentChatId].systemPrompt },
+                        ...appState.conversationHistory
+                    ],
+                    stream: true,
+                    options: {
+                        temperature: appState.settings.temperature,
+                        top_p: appState.settings.top_p,
+                        num_predict: appState.settings.max_tokens,
+                        repeat_penalty: appState.settings.repeat_penalty,
+                    }
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            let aiResponse = '';
+            let aiMessageElement = addMessageToUI('', 'ai');
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                const chunk = decoder.decode(value, { stream: true });
+                const lines = chunk.split('\n').filter(line => line.trim() !== '');
+
+                for (const line of lines) {
+                    const parsedLine = JSON.parse(line);
+                    if (parsedLine.message && parsedLine.message.content) {
+                        aiResponse += parsedLine.message.content;
+                        updateMessageContent(aiMessageElement, aiResponse);
+                    }
+                    if (parsedLine.done) {
+                        appState.conversationHistory.push({ role: 'assistant', content: aiResponse });
+                        saveCurrentChat();
+                        break;
                     }
                 }
-            });
-            
-            // Restore messages
-            appState.chatHistory.forEach(msg => {
-                addMessageToUI(msg.role, msg.content);
-            });
+            }
+
+        } catch (error) {
+            console.error("Error during chat fetch:", error);
+            addMessageToUI(`Error: ${error.message}`, 'error');
+        } finally {
+            appState.thinking = false;
+            elements.sendBtn.disabled = false;
+            hideTypingIndicator();
+            elements.chatInput.focus();
         }
-    } catch (error) {
-        console.error('Failed to load state:', error);
     }
-}
 
-// ============================================
-// KEYBOARD SHORTCUTS
-// ============================================
-
-document.addEventListener('keydown', (e) => {
-    // Ctrl/Cmd + K = Focus input
-    if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
-        e.preventDefault();
-        elements.chatInput.focus();
+    function handleInputKeyDown(event) {
+        if (event.key === 'Enter' && !event.shiftKey) {
+            event.preventDefault();
+            handleSendMessage();
+        }
+        updateTokenCounter();
     }
-    
-    // Ctrl/Cmd + N = New chat
-    if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
-        e.preventDefault();
-        handleNewChat();
-    }
-    
-    // Ctrl/Cmd + , = Open settings
-    if ((e.ctrlKey || e.metaKey) && e.key === ',') {
-        e.preventDefault();
-        openSettings();
-    }
-    
-    // Escape = Close modals
-    if (e.key === 'Escape') {
-        closeSettings();
-        closeExportMenu();
-    }
-});
 
-// ============================================
-// START APP
-// ============================================
+    function addMessageToUI(content, role) {
+        const messageElement = document.createElement('div');
+        messageElement.className = `message ${role}`;
 
-document.addEventListener('DOMContentLoaded', init);
+        const avatar = document.createElement('div');
+        avatar.className = 'message-avatar';
+        avatar.textContent = role === 'user' ? 'U' : (role === 'ai' ? '🤖' : '⚠️');
 
-// ============================================
-// TODO: Claude Code - Additional features to integrate:
-// ============================================
-// 1. Your existing token counter logic
-// 2. Your Ollama connection/status checking
-// 3. Chat history persistence (save/load multiple chats)
-// 4. Conversation branching (if implementing)
-// 5. Image generation display (if implementing)
-// 6. Code syntax highlighting (Prism.js integration)
-// 7. Streaming responses (if using Ollama streaming)
-// 8. Error handling for network issues
-// 9. Model switching confirmation if chat in progress
-// 10. Chat search/filter functionality
+        const messageContent = document.createElement('div');
+        messageContent.className = 'message-content';
+
+        const roleElement = document.createElement('div');
+        roleElement.className = 'message-role';
+        roleElement.textContent = role;
+
+        const textElement = document.createElement('div');
+        textElement.className = 'message-text';
+        textElement.innerHTML = formatMessage(content);
+
+        messageContent.appendChild(roleElement);
+        messageContent.appendChild(textElement);
+        messageElement.appendChild(avatar);
+        messageElement.appendChild(messageContent);
+
+        elements.chatMessages.appendChild(messageElement);
+        scrollToBottom();
+        return messageElement;
+    }
+
+    function updateMessageContent(messageElement, newContent) {
+        const textElement = messageElement.querySelector('.message-text');
+        if (textElement) {
+            textElement.innerHTML = formatMessage(newContent);
+        }
+        scrollToBottom();
+    }
+
+    function formatMessage(content) {
+        // Basic markdown for code blocks
+        return content.replace(/```(\w*)\n([\s\S]*?)\n```/g, (match, lang, code) => {
+            const language = lang || 'plaintext';
+            return `<pre><code class="language-${language}">${escapeHtml(code)}</code></pre>`;
+        }).replace(/`([^`]+)`/g, `<code>$1</code>`);
+    }
+
+    function escapeHtml(unsafe) {
+        return unsafe
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+
+    function showTypingIndicator() {
+        const indicator = document.createElement('div');
+        indicator.id = 'typing-indicator';
+        indicator.className = 'message ai';
+        indicator.innerHTML = `
+            <div class="message-avatar">🤖</div>
+            <div class="message-content">
+                <div class="message-role">ai</div>
+                <div class="message-text loading-dots">Thinking</div>
+            </div>
+        `;
+        elements.chatMessages.appendChild(indicator);
+        scrollToBottom();
+    }
+
+    function hideTypingIndicator() {
+        const indicator = document.getElementById('typing-indicator');
+        if (indicator) {
+            indicator.remove();
+        }
+    }
+
+    function scrollToBottom() {
+        elements.chatMessages.scrollTop = elements.chatMessages.scrollHeight;
+    }
+
+    function renderMessages() {
+        elements.chatMessages.innerHTML = '';
+        appState.conversationHistory.forEach(msg => addMessageToUI(msg.content, msg.role));
+    }
+
+    function updateTokenCounter() {
+        const count = elements.chatInput.value.length; // Simple character count
+        elements.tokenCounter.textContent = `${count} chars`;
+    }
+
+    // ===========================
+    // SETTINGS & DATA
+    // ===========================
+
+    function saveSettings() {
+        localStorage.setItem('ollama_settings', JSON.stringify(appState.settings));
+    }
+
+    function loadSettings() {
+        const savedSettings = localStorage.getItem('ollama_settings');
+        if (savedSettings) {
+            Object.assign(appState.settings, JSON.parse(savedSettings));
+        }
+    }
+
+    function saveChats() {
+        localStorage.setItem('ollama_chats', JSON.stringify(appState.chats));
+    }
+
+    function loadChats() {
+        const savedChats = localStorage.getItem('ollama_chats');
+        if (savedChats) {
+            appState.chats = JSON.parse(savedChats);
+            const latestChatId = Object.keys(appState.chats).sort((a, b) => 
+                new Date(appState.chats[b].createdAt) - new Date(appState.chats[a].createdAt)
+            )[0];
+            if (latestChatId) {
+                switchChat(latestChatId);
+            }
+        }
+    }
+
+    function saveCurrentChat() {
+        if (appState.currentChatId) {
+            appState.chats[appState.currentChatId].history = appState.conversationHistory;
+            saveChats();
+        }
+    }
+
+    function exportCurrentChat() {
+        if (!appState.currentChatId) return;
+        const chatData = appState.chats[appState.currentChatId];
+        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(chatData, null, 2));
+        const downloadAnchorNode = document.createElement('a');
+        downloadAnchorNode.setAttribute("href", dataStr);
+        downloadAnchorNode.setAttribute("download", `${chatData.title.replace(/\s+/g, '_')}.json`);
+        document.body.appendChild(downloadAnchorNode);
+        downloadAnchorNode.click();
+        downloadAnchorNode.remove();
+    }
+
+    // ===========================
+    // UI & THEME
+    // ===========================
+
+    function toggleTheme() {
+        appState.settings.theme = appState.settings.theme === 'light' ? 'dark' : 'light';
+        updateTheme();
+        saveSettings();
+    }
+
+    function updateTheme() {
+        elements.body.dataset.theme = appState.settings.theme;
+        elements.themeToggle.textContent = appState.settings.theme === 'light' ? '🌙' : '☀️';
+    }
+
+    function toggleSettingsModal() {
+        appState.ui.isSettingsModalOpen = !appState.ui.isSettingsModalOpen;
+        elements.settingsModal.classList.toggle('active', appState.ui.isSettingsModalOpen);
+    }
+
+    function toggleSystemPromptEditor() {
+        appState.ui.isSystemPromptEditorOpen = !appState.ui.isSystemPromptEditorOpen;
+        elements.systemPromptEditor.classList.toggle('active', appState.ui.isSystemPromptEditorOpen);
+        elements.systemPromptToggle.classList.toggle('active', appState.ui.isSystemPromptEditorOpen);
+    }
+
+    function applySystemPrompt() {
+        const newPrompt = elements.systemPromptInput.value.trim();
+        if (appState.currentChatId) {
+            appState.chats[appState.currentChatId].systemPrompt = newPrompt;
+            saveChats();
+            // Optionally, start a new chat with this prompt or clear current one
+            if (confirm('System prompt applied. Do you want to start a new chat with this prompt?')) {
+                startNewChat();
+            }
+        }
+    }
+
+    function resetSystemPrompt() {
+        elements.systemPromptInput.value = 'You are a helpful assistant.';
+    }
+
+    function initSliders() {
+        const sliders = [
+            { slider: elements.temperatureSlider, valueEl: elements.temperatureValue, key: 'temperature' },
+            { slider: elements.topPSlider, valueEl: elements.topPValue, key: 'top_p' },
+            { slider: elements.maxTokensSlider, valueEl: elements.maxTokensValue, key: 'max_tokens' },
+            { slider: elements.repeatPenaltySlider, valueEl: elements.repeatPenaltyValue, key: 'repeat_penalty' },
+        ];
+
+        sliders.forEach(({ slider, valueEl, key }) => {
+            if (slider) {
+                slider.value = appState.settings[key];
+                valueEl.textContent = slider.value;
+                slider.addEventListener('input', (e) => {
+                    const value = e.target.value;
+                    valueEl.textContent = value;
+                    appState.settings[key] = parseFloat(value);
+                    saveSettings();
+                });
+            }
+        });
+    }
+
+    // ===========================
+    // START THE APP
+    // ===========================
+    document.addEventListener('DOMContentLoaded', init);
+
+})();

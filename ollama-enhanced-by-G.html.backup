@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Charlie Llama 🦙 | AI Chat Interface</title>
+    <title>Ollama Enhanced by G</title>
 
     <style>
         /* Simple code block styling - no syntax highlighting */
@@ -51,6 +51,30 @@
             display: flex;
             flex-direction: column;
             padding: var(--space-lg);
+            position: fixed;
+            left: 0;
+            top: 0;
+            height: 100vh;
+            z-index: 250;
+            transform: translateX(0);
+            transition: transform var(--transition-normal);
+            box-shadow: 2px 0 8px var(--shadow);
+        }
+
+        .sidebar.collapsed {
+            transform: translateX(-100%);
+        }
+
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            margin-left: 280px;
+            transition: margin-left var(--transition-normal);
+        }
+
+        .container.sidebar-closed .main-content {
+            margin-left: 0;
         }
 
         .logo {
@@ -63,14 +87,14 @@
         }
 
         .logo-icon {
-            width: 40px;
-            height: 40px;
+            width: 64px;
+            height: 64px;
             background: var(--accent-primary);
             border-radius: var(--radius-md);
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 24px;
+            font-size: 48px;
         }
 
         .logo-tagline {
@@ -116,25 +140,59 @@
             font-size: var(--font-sm);
             cursor: pointer;
             transition: background-color var(--transition-normal);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
+            display: flex;
+            align-items: center;
+            gap: var(--space-sm);
+            position: relative;
         }
 
         .chat-item:hover {
             background-color: var(--bg-tertiary);
         }
 
+        .chat-item:hover .chat-item-actions {
+            display: flex;
+        }
+
         .chat-item.active {
+            background-color: var(--bg-tertiary);
+            color: var(--text-primary);
+            border-left: 3px solid var(--accent-primary);
+        }
+
+        .chat-item-actions {
+            display: none;
+            gap: var(--space-xs);
+            background-color: var(--bg-secondary);
+            padding: 4px;
+            border-radius: var(--radius-sm);
+            border: 1px solid var(--border);
+            flex-shrink: 0;
+            margin-left: auto;
+        }
+
+        .chat-item-action-btn {
+            background: none;
+            border: none;
+            padding: 4px 6px;
+            cursor: pointer;
+            font-size: 14px;
+            color: var(--text-secondary);
+            border-radius: 4px;
+            transition: all var(--transition-fast);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .chat-item-action-btn:hover {
             background-color: var(--bg-tertiary);
             color: var(--text-primary);
         }
 
-        /* MAIN CONTENT */
-        .main-content {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
+        .chat-item-action-btn.delete:hover {
+            color: var(--error);
+            background-color: rgba(193, 123, 123, 0.2);
         }
 
         .chat-header {
@@ -149,6 +207,30 @@
         .chat-title {
             font-size: var(--font-lg);
             font-weight: 500;
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: var(--radius-sm);
+            transition: background-color var(--transition-normal);
+        }
+
+        .chat-title:hover {
+            background-color: var(--bg-tertiary);
+        }
+
+        .chat-title-edit {
+            background-color: var(--bg-primary);
+            border: 2px solid var(--accent-primary);
+            padding: 4px 8px;
+            border-radius: var(--radius-sm);
+            font-size: var(--font-lg);
+            font-weight: 500;
+            font-family: inherit;
+            color: var(--text-primary);
+        }
+
+        .chat-title-edit:focus {
+            outline: none;
+            border-color: var(--accent-hover);
         }
 
         .header-actions {
@@ -273,6 +355,13 @@
         /* SETTINGS SECTION */
         .settings-section {
             margin-bottom: var(--space-xl);
+            padding-bottom: var(--space-lg);
+            border-bottom: 1px solid var(--border);
+        }
+
+        .settings-section:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
         }
 
         .settings-section h3 {
@@ -287,6 +376,18 @@
         /* MESSAGE ACTIONS */
         .message {
             position: relative;
+            animation: fadeIn 0.5s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
         }
 
         .message-actions {
@@ -698,6 +799,58 @@ select.input {
 }
 
 /* ===========================
+   CHAIN OF THOUGHT
+   =========================== */
+
+.chain-of-thought {
+  background-color: var(--bg-tertiary);
+  border-left: 3px solid var(--accent-primary);
+  padding: var(--space-md);
+  margin: var(--space-md) 0;
+  border-radius: var(--radius-sm);
+  font-size: var(--font-sm);
+  color: var(--text-secondary);
+  max-height: 300px;
+  overflow-y: auto;
+  cursor: pointer;
+  transition: all var(--transition-normal);
+}
+
+.chain-of-thought.collapsed {
+  max-height: 60px;
+  opacity: 0.7;
+}
+
+.chain-of-thought-header {
+  font-weight: 600;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-bottom: var(--space-sm);
+}
+
+.chain-of-thought.collapsed .chain-of-thought-header::after {
+  content: ' (click to expand)';
+  font-size: var(--font-xs);
+  color: var(--text-tertiary);
+  font-weight: 400;
+}
+
+.chain-of-thought-toggle {
+  display: inline-block;
+  transition: transform var(--transition-normal);
+}
+
+.chain-of-thought.collapsed .chain-of-thought-toggle {
+  transform: rotate(-90deg);
+}
+
+.chain-of-thought-content {
+  line-height: var(--line-height-relaxed);
+}
+
+/* ===========================
    CODE BLOCKS
    =========================== */
 
@@ -1033,6 +1186,11 @@ pre code {
   to { transform: rotate(360deg); }
 }
 
+.loading-dots {
+  font-weight: 500;
+  color: var(--accent-primary);
+}
+
 .loading-dots::after {
   content: '';
   animation: dots 1.5s steps(4, end) infinite;
@@ -1112,253 +1270,74 @@ pre code {
    THEMES
    =========================== */
 
+[data-theme="ocean-light"] {
+  --bg-primary: #E6F0F2;
+  --bg-secondary: #D9E8EC;
+  --bg-tertiary: #C1D9DF;
+  --text-primary: #1A3A40;
+  --text-secondary: #426A73;
+  --text-tertiary: #6B8E99;
+  --accent-primary: #4F8A99;
+  --accent-hover: #3C6A73;
+  --accent-light: #88ADB8;
+}
+
+[data-theme="ocean-dark"] {
+  --bg-primary: #1A2A30;
+  --bg-secondary: #243B42;
+  --bg-tertiary: #304D54;
+  --text-primary: #D9E8EC;
+  --text-secondary: #A8C5CF;
+  --text-tertiary: #88ADB8;
+  --accent-primary: #6B8E99;
+  --accent-hover: #88ADB8;
+  --accent-light: #4F8A99;
+  --message-user: #1F3038;
+  --message-ai: #1A2A30;
+}
+
 [data-theme="retro-dark"] {
-  /* Classic Green Terminal - Retro Dark */
-  --bg-primary: #000000;
-  --bg-secondary: #0A1A0A;
-  --bg-tertiary: #142414;
-
-  --text-primary: #00FF00;
-  --text-secondary: #00DD00;
-  --text-tertiary: #00BB00;
-
-  --accent-primary: #00FF00;
-  --accent-hover: #00DD00;
-  --accent-light: #66FF66;
-
+  /* 80s/90s Terminal Style - Yellow/Orange on Black */
+  --bg-primary: #0A0E27;
+  --bg-secondary: #0F1433;
+  --bg-tertiary: #161B3D;
+  --text-primary: #FFD700;
+  --text-secondary: #FFA500;
+  --text-tertiary: #FF8C00;
+  --accent-primary: #FFD700;
+  --accent-hover: #FFA500;
+  --accent-light: #FF8C00;
   --success: #00FF00;
-  --warning: #FFFF00;
-  --error: #FF0000;
+  --warning: #FFD700;
+  --error: #FF4444;
   --info: #00FFFF;
-
-  --message-user: #0F1F0F;
-  --message-ai: #000000;
-
-  --border: #003300;
-  --shadow: rgba(0, 255, 0, 0.3);
-  --overlay: rgba(0, 0, 0, 0.9);
+  --message-user: #1a1f3a;
+  --message-ai: #0F1433;
+  --border: #2a3050;
+  --shadow: rgba(255, 215, 0, 0.1);
+  --overlay: rgba(0, 0, 0, 0.7);
 }
 
 [data-theme="retro-light"] {
-  /* Classic Green Terminal - Retro Light */
-  --bg-primary: #001100;
-  --bg-secondary: #002200;
-  --bg-tertiary: #003300;
-
-  --text-primary: #00FF00;
-  --text-secondary: #00DD00;
-  --text-tertiary: #00BB00;
-
-  --accent-primary: #00FF00;
-  --accent-hover: #00DD00;
-  --accent-light: #66FF66;
-
-  --success: #00FF00;
-  --warning: #FFFF00;
-  --error: #FF0000;
-  --info: #00FFFF;
-
-  --message-user: #002200;
-  --message-ai: #001100;
-
-  --border: #004400;
-  --shadow: rgba(0, 255, 0, 0.3);
-  --overlay: rgba(0, 17, 0, 0.95);
-}
-
-[data-theme="forest-light"] {
-  --bg-primary: #E8F0E8;
-  --bg-secondary: #DDE8DD;
-  --bg-tertiary: #C6D6C6;
-  --text-primary: #2C3D2C;
-  --text-secondary: #556B55;
-  --text-tertiary: #7D997D;
-  --accent-primary: #6B8E6B;
-  --accent-hover: #5A7A5A;
-  --accent-light: #A8C5A8;
-}
-
-[data-theme="forest-dark"] {
-  --bg-primary: #1E2A1E;
-  --bg-secondary: #2A3D2A;
-  --bg-tertiary: #365036;
-  --text-primary: #E8F0E8;
-  --text-secondary: #A8C5A8;
-  --text-tertiary: #7D997D;
-  --accent-primary: #8FAF8F;
-  --accent-hover: #A8C5A8;
-  --accent-light: #6B8E6B;
-}
-
-[data-theme="ruby-light"] {
-  --bg-primary: #F2E6E6;
-  --bg-secondary: #ECD9D9;
-  --bg-tertiary: #DFC1C1;
-  --text-primary: #401A1A;
-  --text-secondary: #734242;
-  --text-tertiary: #996B6B;
-  --accent-primary: #994F4F;
-  --accent-hover: #733C3C;
-  --accent-light: #B88888;
-}
-
-[data-theme="ruby-dark"] {
-  --bg-primary: #301A1A;
-  --bg-secondary: #422424;
-  --bg-tertiary: #543030;
-  --text-primary: #ECD9D9;
-  --text-secondary: #CFA8A8;
-  --text-tertiary: #B88888;
-  --accent-primary: #C98989;
-  --accent-hover: #B88888;
-  --accent-light: #994F4F;
-}
-
-[data-theme="gold-light"] {
-  --bg-primary: #F2F0E6;
-  --bg-secondary: #ECE8D9;
-  --bg-tertiary: #DFD8C1;
-  --text-primary: #403A1A;
-  --text-secondary: #736A42;
-  --text-tertiary: #998E6B;
-  --accent-primary: #998A4F;
-  --accent-hover: #736A3C;
-  --accent-light: #B8A988;
-}
-
-[data-theme="gold-dark"] {
-  --bg-primary: #302A1A;
-  --bg-secondary: #423B24;
-  --bg-tertiary: #544D30;
-  --text-primary: #ECE8D9;
-  --text-secondary: #CFAE80;
-  --text-tertiary: #B8A988;
-  --accent-primary: #D4A574;
-  --accent-hover: #B8A988;
-  --accent-light: #998A4F;
-}
-
-/* ===========================
-   RETRO THEME SPECIFIC STYLES
-   =========================== */
-
-/* Classic Green Terminal - Retro Dark & Light */
-[data-theme="retro-dark"] body,
-[data-theme="retro-light"] body {
-  font-family: 'SF Mono', 'Monaco', 'Menlo', 'Consolas', 'Courier New', monospace;
-  text-shadow: 0 0 3px rgba(0, 255, 0, 0.8);
-}
-
-[data-theme="retro-dark"] h1,
-[data-theme="retro-dark"] h2,
-[data-theme="retro-dark"] h3,
-[data-theme="retro-dark"] .chat-title,
-[data-theme="retro-dark"] .logo,
-[data-theme="retro-light"] h1,
-[data-theme="retro-light"] h2,
-[data-theme="retro-light"] h3,
-[data-theme="retro-light"] .chat-title,
-[data-theme="retro-light"] .logo {
-  text-shadow: 0 0 10px rgba(0, 255, 0, 1), 0 0 20px rgba(0, 200, 0, 0.6);
-}
-
-[data-theme="retro-dark"] .sidebar,
-[data-theme="retro-light"] .sidebar {
-  background-color: rgba(0, 0, 0, 0.98);
-  border-right: 2px solid rgba(0, 51, 0, 0.8);
-  box-shadow: 2px 0 20px rgba(0, 255, 0, 0.2);
-}
-
-[data-theme="retro-dark"] .chat-header,
-[data-theme="retro-dark"] .chat-input-container,
-[data-theme="retro-light"] .chat-header,
-[data-theme="retro-light"] .chat-input-container {
-  background-color: rgba(0, 0, 0, 0.98);
-  border-color: rgba(0, 51, 0, 0.8);
-  box-shadow: 0 0 15px rgba(0, 255, 0, 0.15);
-}
-
-[data-theme="retro-dark"] .modal,
-[data-theme="retro-light"] .modal {
-  background-color: rgba(0, 0, 0, 0.98);
-  border-left: 2px solid rgba(0, 51, 0, 0.8);
-  box-shadow: -4px 0 30px rgba(0, 255, 0, 0.3);
-}
-
-[data-theme="retro-dark"] .input,
-[data-theme="retro-light"] .input,
-[data-theme="retro-dark"] textarea,
-[data-theme="retro-light"] textarea,
-[data-theme="retro-dark"] select,
-[data-theme="retro-light"] select {
-  background-color: rgba(0, 0, 0, 0.95) !important;
-  border: 2px solid rgba(0, 51, 0, 0.8) !important;
-  box-shadow: inset 0 0 10px rgba(0, 0, 0, 0.8), 0 0 8px rgba(0, 255, 0, 0.3);
-  font-family: 'SF Mono', 'Monaco', 'Menlo', 'Consolas', 'Courier New', monospace;
-  color: #00FF00 !important;
-  text-shadow: 0 0 8px rgba(0, 255, 0, 0.8);
-}
-
-[data-theme="retro-dark"] .input::placeholder,
-[data-theme="retro-light"] .input::placeholder,
-[data-theme="retro-dark"] textarea::placeholder,
-[data-theme="retro-light"] textarea::placeholder {
-  color: rgba(0, 255, 0, 0.6) !important;
-}
-
-[data-theme="retro-dark"] .input:focus,
-[data-theme="retro-light"] .input:focus {
-  border-color: var(--accent-primary);
-  box-shadow: 0 0 0 3px rgba(0, 255, 0, 0.4), inset 0 0 10px rgba(0, 0, 0, 0.8), 0 0 20px rgba(0, 255, 0, 0.5);
-}
-
-[data-theme="retro-dark"] .icon-btn,
-[data-theme="retro-light"] .icon-btn {
-  background-color: rgba(0, 255, 0, 0.1);
-  border: 2px solid rgba(0, 255, 0, 0.4);
-}
-
-[data-theme="retro-dark"] .icon-btn:hover,
-[data-theme="retro-light"] .icon-btn:hover {
-  background-color: rgba(0, 255, 0, 0.25);
-  border-color: var(--accent-primary);
-  box-shadow: 0 0 15px rgba(0, 255, 0, 0.6), 0 0 30px rgba(0, 200, 0, 0.3);
-  text-shadow: 0 0 5px rgba(0, 255, 0, 1);
-}
-
-[data-theme="retro-dark"] .btn-primary,
-[data-theme="retro-light"] .btn-primary {
-  background-color: rgba(0, 255, 0, 0.2);
-  color: var(--accent-primary);
-  border: 2px solid var(--accent-primary);
-  box-shadow: 0 0 10px rgba(0, 255, 0, 0.5), 0 2px 4px rgba(0, 0, 0, 0.8);
-  text-shadow: 0 0 5px rgba(0, 255, 0, 0.9);
-}
-
-[data-theme="retro-dark"] .btn-primary:hover,
-[data-theme="retro-light"] .btn-primary:hover {
-  background-color: rgba(0, 255, 0, 0.3);
-  box-shadow: 0 0 20px rgba(0, 255, 0, 0.7), 0 0 40px rgba(0, 200, 0, 0.4);
-}
-
-[data-theme="retro-dark"] .message.user .message-text {
-  background-color: #0F1F0F !important;
-  color: #00FF00 !important;
-}
-
-[data-theme="retro-dark"] .message.user .message-avatar {
-  background-color: #00FF00 !important;
-  color: #000000 !important;
-}
-
-[data-theme="retro-light"] .message.user .message-text {
-  background-color: #002200 !important;
-  color: #00FF00 !important;
-}
-
-[data-theme="retro-light"] .message.user .message-avatar {
-  background-color: #00FF00 !important;
-  color: #000000 !important;
+  /* Retro Light - Cream on Dark Text (like old monitors) */
+  --bg-primary: #FFFACD;
+  --bg-secondary: #FFF8DC;
+  --bg-tertiary: #FFE4B5;
+  --text-primary: #1a1a1a;
+  --text-secondary: #333333;
+  --text-tertiary: #666666;
+  --accent-primary: #CC7000;
+  --accent-hover: #994C00;
+  --accent-light: #FF9500;
+  --success: #006600;
+  --warning: #FF6600;
+  --error: #CC0000;
+  --info: #0066CC;
+  --message-user: #FFE4B5;
+  --message-ai: #FFF8DC;
+  --border: #DAA520;
+  --shadow: rgba(0, 0, 0, 0.1);
+  --overlay: rgba(0, 0, 0, 0.5);
 }
 
 /* ===========================
@@ -1418,13 +1397,9 @@ pre code {
             </div>
 
             <!-- SAVE CURRENT CHAT BUTTON -->
-            <button class="btn btn-secondary" id="saveCurrentChatBtn" style="width: 100%; margin-bottom: var(--space-md); font-size: var(--font-sm);">💾 Save This Chat</button>
+            <button class="btn btn-secondary" id="saveCurrentChatBtn" style="width: 100%; margin-bottom: var(--space-md); font-size: var(--font-sm);">⬇ Save Chat</button>
 
-            <!-- THEME TOGGLE -->
-            <button class="btn btn-ghost" id="themeToggle" style="justify-content: center;">
-                <span id="themeIcon">🌙</span>
-                <span id="themeText" style="margin-left: 8px;">Dark Mode</span>
-            </button>
+
         </aside>
 
         <!-- MAIN CONTENT -->
@@ -1432,11 +1407,27 @@ pre code {
             <!-- HEADER -->
             <div class="chat-header">
                 <div style="display: flex; align-items: center; gap: var(--space-sm); flex: 1;">
-                    <h1 class="chat-title" id="chatTitle" style="cursor: pointer; flex: 1;" title="Click to rename">Charlie Llama Chat</h1>
-                    <button class="icon-btn" id="editTitleBtn" title="Rename chat" style="width: 32px; height: 32px; padding: 0; display: flex; align-items: center; justify-content: center; font-size: 14px;">✏️</button>
+                    <button class="icon-btn" id="sidebarToggleBtn" title="Toggle Sidebar">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="3" y1="6" x2="21" y2="6"></line>
+                            <line x1="3" y1="12" x2="21" y2="12"></line>
+                            <line x1="3" y1="18" x2="21" y2="18"></line>
+                        </svg>
+                    </button>
+                    <h1 class="chat-title" id="chatTitle" style="flex: 1;">Charlie Llama Chat</h1>
                 </div>
                 <div class="header-actions">
-                    <button class="icon-btn" id="settingsBtn" title="Settings">⚙️</button>
+                    <button class="icon-btn" id="themeToggleBtn" title="Toggle Dark/Light Mode">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+                        </svg>
+                    </button>
+                    <button class="icon-btn" id="settingsBtn" title="Settings">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <circle cx="12" cy="12" r="3"></circle>
+                            <path d="M12 1v6m0 6v6M4.22 4.22l4.24 4.24m6.08 0l4.24-4.24M1 12h6m6 0h6m-1.78 7.78l-4.24-4.24m-6.08 0l-4.24 4.24"/>
+                        </svg>
+                    </button>
                     <div class="badge badge-success" id="statusBadge">
                         ● Ready
                     </div>
@@ -1586,6 +1577,17 @@ pre code {
                 <div class="settings-section">
                     <h3>Appearance</h3>
                     <div class="param-control">
+                        <label for="theme-select">Theme</label>
+                        <select id="theme-select" class="input">
+                            <option value="light">Default Light</option>
+                            <option value="dark">Default Dark</option>
+                            <option value="ocean-light">Ocean Light</option>
+                            <option value="ocean-dark">Ocean Dark</option>
+                            <option value="retro-dark">Retro Dark (Terminal)</option>
+                            <option value="retro-light">Retro Light</option>
+                        </select>
+                    </div>
+                    <div class="param-control">
                         <label>
                             <span>Font Size</span>
                             <span class="param-value" id="fontSizeValue">15px</span>
@@ -1601,16 +1603,95 @@ pre code {
                         >
                     </div>
                 </div>
+
+                <!-- UI PREFERENCES -->
+                <div class="settings-section">
+                    <h3>UI Preferences</h3>
+                    <div class="param-control">
+                        <label style="display: flex; align-items: center; gap: var(--space-sm); margin-bottom: 0;">
+                            <input type="checkbox" id="hideThinking" style="width: 18px; height: 18px; cursor: pointer;">
+                            <span>Hide Thinking Indicator</span>
+                        </label>
+                        <small>Model still processes tokens, you just won't see the typing animation</small>
+                    </div>
+                    <div class="param-control">
+                        <label style="display: flex; align-items: center; gap: var(--space-sm); margin-bottom: 0;">
+                            <input type="checkbox" id="collapseChainOfThought" style="width: 18px; height: 18px; cursor: pointer;">
+                            <span>Collapse Chain of Thought by Default</span>
+                        </label>
+                        <small>Chain of thought messages will be collapsed when they appear</small>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
+    <style>
+        /* Status Badge Enhancements */
+        .status-badge {
+            padding: 4px 12px;
+            border-radius: var(--radius-sm);
+            font-size: var(--font-xs);
+            font-weight: 500;
+            transition: all var(--transition-normal);
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .status-badge.status-connected {
+            background-color: rgba(122, 159, 126, 0.2);
+            color: var(--success);
+            border: 1px solid var(--success);
+        }
+
+        .status-badge.status-connecting {
+            background-color: rgba(136, 173, 184, 0.2);
+            color: var(--info);
+            border: 1px solid var(--info);
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        .status-badge.status-thinking {
+            background-color: rgba(107, 142, 153, 0.2);
+            color: var(--accent-primary);
+            border: 1px solid var(--accent-primary);
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+
+        .status-badge.status-retrying {
+            background-color: rgba(212, 165, 116, 0.2);
+            color: var(--warning);
+            border: 1px solid var(--warning);
+            animation: pulse 1s ease-in-out infinite;
+        }
+
+        .status-badge.status-error,
+        .status-badge.status-disconnected {
+            background-color: rgba(193, 123, 123, 0.2);
+            color: var(--error);
+            border: 1px solid var(--error);
+        }
+
+        @keyframes pulse {
+            0%, 100% {
+                opacity: 1;
+            }
+            50% {
+                opacity: 0.6;
+            }
+        }
+    </style>
+
     <script>
-        // ============================================
+        // ============================================ 
         // STATE MANAGEMENT
-        // ============================================
+        // ============================================ 
 
         const OLLAMA_API_URL = 'http://localhost:11434';
+        const API_TIMEOUT = 60000; // 60 seconds
+        const MAX_RETRIES = 3;
+        const RETRY_DELAY = 1000; // Start with 1 second
 
         const appState = {
             currentModel: '',
@@ -1623,12 +1704,19 @@ pre code {
                 repeat_penalty: 1.1
             },
             theme: 'light',
-            savedChats: [] // Array of saved chat sessions
+            savedChats: [], // Array of saved chat sessions
+            currentLoadedChatId: null, // Track which saved chat is currently loaded
+            hideThinking: false, // Hide typing indicator
+            sidebarOpen: true, // Sidebar visibility state
+            collapseChainOfThought: false, // Collapse chain of thought by default
+            connectionStatus: 'disconnected', // Connection status
+            retryCount: 0, // Number of retries
+            soundEffects: true // Sound effects enabled
         };
 
-        // ============================================
+        // ============================================ 
         // DOM ELEMENTS
-        // ============================================
+        // ============================================ 
 
         const elements = {
             chatMessages: document.getElementById('chatMessages'),
@@ -1638,7 +1726,7 @@ pre code {
             modelSelect: document.getElementById('modelSelect'),
             newChatBtn: document.getElementById('newChatBtn'),
             chatHistory: document.getElementById('chatHistory'),
-            themeToggle: document.getElementById('themeToggle'),
+
             systemPromptToggle: document.getElementById('systemPromptToggle'),
             systemPromptEditor: document.getElementById('systemPromptEditor'),
             systemPromptInput: document.getElementById('systemPromptInput'),
@@ -1647,17 +1735,23 @@ pre code {
             settingsModal: document.getElementById('settingsModal'),
             settingsBtn: document.getElementById('settingsBtn'),
             closeSettingsBtn: document.getElementById('closeSettingsBtn'),
-            editTitleBtn: document.getElementById('editTitleBtn'),
+            themeToggleBtn: document.getElementById('themeToggleBtn'),
             tokenCounter: document.getElementById('tokenCounter'),
             statusBadge: document.getElementById('statusBadge'),
             promptTemplate: document.getElementById('promptTemplate'),
             saveCurrentChatBtn: document.getElementById('saveCurrentChatBtn'),
-            currentChat: document.getElementById('currentChat')
+            currentChat: document.getElementById('currentChat'),
+            themeSelect: document.getElementById('theme-select'),
+            sidebarToggleBtn: document.getElementById('sidebarToggleBtn'),
+            sidebar: document.querySelector('.sidebar'),
+            container: document.querySelector('.container'),
+            hideThinkingCheckbox: document.getElementById('hideThinking'),
+            collapseChainOfThoughtCheckbox: document.getElementById('collapseChainOfThought')
         };
 
-        // ============================================
+        // ============================================ 
         // MODEL TOKEN LIMITS
-        // ============================================
+        // ============================================ 
 
         const modelTokenLimits = {
             // Common Ollama models and their context windows
@@ -1737,9 +1831,9 @@ pre code {
             infoText.textContent = `Maximum: ${maxTokens} tokens (${model})`;
         }
 
-        // ============================================
+        // ============================================ 
         // PROMPT TEMPLATES
-        // ============================================
+        // ============================================ 
 
         const promptTemplates = {
             assistant: 'You are a helpful assistant.',
@@ -1751,20 +1845,200 @@ pre code {
         };
 
         // ============================================
-        // INITIALIZATION
+        // ERROR HANDLING
         // ============================================
+
+        class OllamaAPIError extends Error {
+            constructor(code, message, originalError = null) {
+                super(message);
+                this.name = 'OllamaAPIError';
+                this.code = code;
+                this.originalError = originalError;
+            }
+        }
+
+        function shouldRetry(error) {
+            const retryableCodes = ['NETWORK', 'TIMEOUT', 'MODEL_LOADING', 500, 502, 503, 504];
+            return retryableCodes.includes(error.code) || retryableCodes.includes(error.status);
+        }
+
+        function delay(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        function getErrorMessage(error) {
+            const errorMessages = {
+                'NETWORK': 'Cannot connect to Ollama. Please ensure Ollama is running on localhost:11434',
+                'TIMEOUT': 'Request timed out. The model might be processing a large request. Please try again.',
+                'MODEL_NOT_FOUND': 'Model not found. Please select a valid model from the dropdown.',
+                'MODEL_LOADING': 'Model is still loading. Please wait a moment and try again.',
+                'OUT_OF_MEMORY': 'Model ran out of memory. Try reducing the context size or using a smaller model.',
+                'INVALID_REQUEST': 'Invalid request format. Please try again.',
+                'RATE_LIMITED': 'Too many requests. Please wait a moment before trying again.',
+                500: 'Ollama server error. Please check the Ollama logs.',
+                503: 'Ollama service unavailable. The model might be loading.',
+                504: 'Gateway timeout. The request took too long to process.'
+            };
+
+            if (error instanceof OllamaAPIError) {
+                return errorMessages[error.code] || error.message;
+            }
+
+            return error.message || 'An unexpected error occurred. Please try again.';
+        }
+
+        // ============================================
+        // SOUND EFFECTS
+        // ============================================
+
+        function playSound(type) {
+            if (!appState.soundEffects) return;
+
+            try {
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+
+                switch (type) {
+                    case 'send':
+                        oscillator.frequency.value = 800;
+                        gainNode.gain.value = 0.1;
+                        break;
+                    case 'receive':
+                        oscillator.frequency.value = 600;
+                        gainNode.gain.value = 0.1;
+                        break;
+                    case 'error':
+                        oscillator.frequency.value = 300;
+                        gainNode.gain.value = 0.1;
+                        break;
+                    case 'notification':
+                        oscillator.frequency.value = 1000;
+                        gainNode.gain.value = 0.1;
+                        break;
+                }
+
+                oscillator.start();
+                oscillator.stop(audioContext.currentTime + 0.1);
+            } catch (e) {
+                // Silently fail if audio context not available
+            }
+        }
+
+        // ============================================
+        // CONNECTION HEALTH CHECK
+        // ============================================
+
+        async function checkConnectionHealth() {
+            try {
+                const response = await fetch(`${OLLAMA_API_URL}/api/tags`, {
+                    method: 'HEAD',
+                    signal: AbortSignal.timeout(5000)
+                });
+
+                if (response.ok) {
+                    if (appState.connectionStatus !== 'connected') {
+                        updateConnectionStatus('connected');
+                    }
+                }
+            } catch (error) {
+                if (appState.connectionStatus === 'connected') {
+                    updateConnectionStatus('error');
+                }
+            }
+        }
+
+        async function startHealthCheck() {
+            await checkConnectionHealth();
+            setInterval(checkConnectionHealth, 30000);
+        }
+
+        function updateConnectionStatus(status) {
+            appState.connectionStatus = status;
+            const badge = elements.statusBadge;
+            if (badge) {
+                badge.className = `status-badge status-${status}`;
+                const statusTexts = {
+                    'connected': 'Connected',
+                    'connecting': 'Connecting...',
+                    'thinking': 'AI Thinking...',
+                    'retrying': `Retrying... (${appState.retryCount}/${MAX_RETRIES})`,
+                    'error': 'Disconnected',
+                    'disconnected': 'Disconnected'
+                };
+                badge.textContent = statusTexts[status] || 'Unknown';
+            }
+        }
+
+        // ============================================
+        // KEYBOARD SHORTCUTS
+        // ============================================
+
+        function setupKeyboardShortcuts() {
+            document.addEventListener('keydown', (e) => {
+                // Ctrl/Cmd + K = Focus input
+                if ((e.ctrlKey || e.metaKey) && e.key === 'k') {
+                    e.preventDefault();
+                    elements.chatInput?.focus();
+                }
+
+                // Ctrl/Cmd + N = New chat
+                if ((e.ctrlKey || e.metaKey) && e.key === 'n') {
+                    e.preventDefault();
+                    newChat();
+                }
+
+                // Ctrl/Cmd + S = Save chat
+                if ((e.ctrlKey || e.metaKey) && e.key === 's') {
+                    e.preventDefault();
+                    saveCurrentChat();
+                }
+
+                // Ctrl/Cmd + , = Open settings
+                if ((e.ctrlKey || e.metaKey) && e.key === ',') {
+                    e.preventDefault();
+                    openSettings();
+                }
+
+                // Escape = Close modals
+                if (e.key === 'Escape') {
+                    if (elements.settingsModal?.style.display !== 'none') {
+                        closeSettings();
+                    }
+                }
+            });
+        }
+
+        // ============================================
+        // INITIALIZATION
+        // ============================================ 
 
         async function init() {
             loadState();
             setupEventListeners();
             setupParameterSliders();
+            setupKeyboardShortcuts();
             autoResizeTextarea();
+
+            // Initialize font size styling for message text
+            const fontSizeValue = document.getElementById('font_size').value || 15;
+            const style = document.getElementById('messageFontStyle') || document.createElement('style');
+            if (!document.getElementById('messageFontStyle')) {
+                style.id = 'messageFontStyle';
+                document.head.appendChild(style);
+            }
+            style.textContent = `.message-text { font-size: ${fontSizeValue}px !important; }`;
+
             await populateModels();
+            startHealthCheck();
         }
 
-        // ============================================
+        // ============================================ 
         // OLLAMA API - FETCH MODELS
-        // ============================================
+        // ============================================ 
 
         async function populateModels() {
             try {
@@ -1803,9 +2077,9 @@ pre code {
             }
         }
 
-        // ============================================
+        // ============================================ 
         // EVENT LISTENERS
-        // ============================================
+        // ============================================ 
 
         function setupEventListeners() {
             // Send message
@@ -1827,8 +2101,11 @@ pre code {
             // New chat
             elements.newChatBtn.addEventListener('click', handleNewChat);
 
-            // Theme toggle
-            elements.themeToggle.addEventListener('click', toggleTheme);
+            // Theme selector
+            elements.themeSelect.addEventListener('change', (e) => setTheme(e.target.value));
+
+            // Chat title editing
+            elements.chatTitle.addEventListener('click', handleEditTitle);
 
             // System prompt
             elements.systemPromptToggle.addEventListener('click', toggleSystemPrompt);
@@ -1843,9 +2120,8 @@ pre code {
                 if (e.target === elements.settingsModal) closeSettings();
             });
 
-            // Edit title button
-            elements.editTitleBtn.addEventListener('click', handleEditTitle);
-            elements.chatTitle.addEventListener('click', handleEditTitle);
+            // Theme toggle button (Dark/Light mode)
+            elements.themeToggleBtn.addEventListener('click', toggleDarkLightMode);
 
             // Save chat button
             elements.saveCurrentChatBtn.addEventListener('click', handleSaveChat);
@@ -1855,11 +2131,26 @@ pre code {
 
             // Chat search
             document.getElementById('chatSearch').addEventListener('input', handleChatSearch);
+
+            // Sidebar toggle
+            elements.sidebarToggleBtn.addEventListener('click', toggleSidebar);
+
+            // Hide thinking toggle
+            elements.hideThinkingCheckbox.addEventListener('change', (e) => {
+                appState.hideThinking = e.target.checked;
+                saveState();
+            });
+
+            // Collapse chain of thought toggle
+            elements.collapseChainOfThoughtCheckbox.addEventListener('change', (e) => {
+                appState.collapseChainOfThought = e.target.checked;
+                saveState();
+            });
         }
 
-        // ============================================
+        // ============================================ 
         // CHAT SEARCH
-        // ============================================
+        // ============================================ 
 
         function handleChatSearch(e) {
             const query = e.target.value.toLowerCase().trim();
@@ -1875,9 +2166,9 @@ pre code {
             });
         }
 
-        // ============================================
+        // ============================================ 
         // CHAT FUNCTIONS
-        // ============================================
+        // ============================================ 
 
         async function handleSendMessage() {
             const message = elements.chatInput.value.trim();
@@ -1885,6 +2176,7 @@ pre code {
 
             if (!appState.currentModel) {
                 showError('Please select a model first');
+                playSound('error');
                 return;
             }
 
@@ -1904,42 +2196,21 @@ pre code {
             // Show typing indicator
             showTypingIndicator();
             elements.sendBtn.disabled = true;
+            updateConnectionStatus('thinking');
             elements.tokenCounter.textContent = 'Thinking...';
 
+            // Play send sound
+            playSound('send');
+
+            // Add small delay to ensure typing indicator is visible
+            await new Promise(resolve => setTimeout(resolve, 100));
+
+            // Reset retry count for new message
+            appState.retryCount = 0;
+
             try {
-                // Call Ollama API
-                const requestBody = {
-                    model: appState.currentModel,
-                    messages: [
-                        { role: 'system', content: appState.systemPrompt },
-                        ...appState.conversationHistory
-                    ],
-                    stream: false,
-                    options: appState.params
-                };
-
-                console.log('Sending request to:', `${OLLAMA_API_URL}/api/chat`);
-                console.log('With model:', appState.currentModel);
-                console.log('Request body:', requestBody);
-
-                const response = await fetch(`${OLLAMA_API_URL}/api/chat`, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(requestBody),
-                });
-
-                console.log('Response status:', response.status);
-
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    console.error('Error response:', errorText);
-                    throw new Error(`API request failed with status ${response.status}: ${errorText}`);
-                }
-
-                const data = await response.json();
-                console.log('Response data:', data);
+                // Call Ollama API with retry logic
+                const data = await callOllamaAPIWithRetry();
 
                 hideTypingIndicator();
 
@@ -1957,17 +2228,132 @@ pre code {
 
                 elements.tokenCounter.textContent = `Prompt: ${promptTokens} | Response: ${responseTokens} | ${tokensPerSecond} tok/s`;
 
+                // Play receive sound
+                playSound('receive');
+                updateConnectionStatus('connected');
+
                 saveState();
 
             } catch (error) {
                 hideTypingIndicator();
                 console.error('Error during chat:', error);
-                const errorMsg = error.message || error.toString();
+                const errorMsg = getErrorMessage(error);
                 showError(`Failed to send message: ${errorMsg}`);
+                playSound('error');
+                updateConnectionStatus('error');
             } finally {
                 elements.sendBtn.disabled = false;
                 elements.chatInput.focus();
             }
+        }
+
+        // Enhanced API call with retry logic
+        async function callOllamaAPIWithRetry(retryCount = 0) {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), API_TIMEOUT);
+
+            try {
+                updateConnectionStatus('connecting');
+
+                const requestBody = {
+                    model: appState.currentModel,
+                    messages: [
+                        { role: 'system', content: appState.systemPrompt },
+                        ...appState.conversationHistory
+                    ],
+                    stream: false,
+                    options: appState.params
+                };
+
+                console.log('Sending request to:', `${OLLAMA_API_URL}/api/chat`);
+                console.log('With model:', appState.currentModel);
+
+                const response = await fetch(`${OLLAMA_API_URL}/api/chat`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(requestBody),
+                    signal: controller.signal
+                });
+
+                clearTimeout(timeoutId);
+
+                console.log('Response status:', response.status);
+
+                if (!response.ok) {
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new OllamaAPIError(
+                        response.status,
+                        errorData.error || `HTTP ${response.status}: ${response.statusText}`,
+                        errorData
+                    );
+                }
+
+                const data = await response.json();
+                console.log('Response received successfully');
+
+                updateConnectionStatus('connected');
+                appState.retryCount = 0;
+                return data;
+
+            } catch (error) {
+                clearTimeout(timeoutId);
+
+                // Handle different error types
+                if (error.name === 'AbortError') {
+                    throw new OllamaAPIError('TIMEOUT', 'Request timed out. The model might be overloaded.');
+                }
+
+                if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
+                    throw new OllamaAPIError('NETWORK', 'Cannot connect to Ollama. Please check if Ollama is running.');
+                }
+
+                // Check for model loading error
+                if (error.originalError?.error?.includes('model')) {
+                    if (error.originalError.error.includes('not found')) {
+                        throw new OllamaAPIError('MODEL_NOT_FOUND', 'Model not found. Please select a valid model.');
+                    }
+                    if (error.originalError.error.includes('loading')) {
+                        throw new OllamaAPIError('MODEL_LOADING', 'Model is still loading. Please wait...');
+                    }
+                }
+
+                // Retry logic for specific errors
+                if (retryCount < MAX_RETRIES && shouldRetry(error)) {
+                    appState.retryCount = retryCount + 1;
+                    updateConnectionStatus('retrying');
+
+                    console.log(`Retrying... (${retryCount + 1}/${MAX_RETRIES})`);
+                    await delay(RETRY_DELAY * Math.pow(2, retryCount)); // Exponential backoff
+                    return callOllamaAPIWithRetry(retryCount + 1);
+                }
+
+                throw error;
+            }
+        }
+
+        function extractChainOfThought(content) {
+            // Look for thinking tags <thinking>...</thinking>
+            const thinkingMatch = content.match(/<thinking>([\s\S]*?)<\/thinking>/);
+            if (thinkingMatch) {
+                return {
+                    thinking: thinkingMatch[1].trim(),
+                    response: content.replace(/<thinking>[\s\S]*?<\/thinking>/g, '').trim()
+                };
+            }
+            // Look for other thinking patterns
+            const reflectionMatch = content.match(/^(Thinking:|I'm thinking about|Let me think|First, let me|Before I respond)[\s\S]*?\n\n([\s\S]*)/);
+            if (reflectionMatch && reflectionMatch[0].length > 50) {
+                const parts = content.split('\n\n');
+                if (parts.length >= 2) {
+                    return {
+                        thinking: parts[0],
+                        response: parts.slice(1).join('\n\n')
+                    };
+                }
+            }
+            return null;
         }
 
         function addMessageToUI(role, content, messageIndex) {
@@ -1987,11 +2373,50 @@ pre code {
             roleDiv.className = 'message-role';
             roleDiv.textContent = role === 'user' ? 'You' : appState.currentModel;
 
+            // Check for chain of thought in AI messages
+            let chainOfThought = null;
+            let displayContent = content;
+
+            if (role === 'ai') {
+                chainOfThought = extractChainOfThought(content);
+                if (chainOfThought) {
+                    displayContent = chainOfThought.response;
+                }
+            }
+
+            // Add chain of thought section if present
+            if (chainOfThought && role === 'ai') {
+                const cotDiv = document.createElement('div');
+                cotDiv.className = 'chain-of-thought' + (appState.collapseChainOfThought ? ' collapsed' : '');
+
+                const cotHeader = document.createElement('div');
+                cotHeader.className = 'chain-of-thought-header';
+                cotHeader.innerHTML = `<span class="chain-of-thought-toggle">▼</span> Chain of Thought`;
+
+                const cotContent = document.createElement('div');
+                cotContent.className = 'chain-of-thought-content';
+                cotContent.innerHTML = formatMessage(chainOfThought.thinking);
+
+                cotDiv.appendChild(cotHeader);
+                cotDiv.appendChild(cotContent);
+
+                // Toggle collapse on click
+                cotDiv.addEventListener('click', (e) => {
+                    if (e.target.closest('.chain-of-thought-header')) {
+                        cotDiv.classList.toggle('collapsed');
+                    }
+                });
+
+                contentDiv.appendChild(roleDiv);
+                contentDiv.appendChild(cotDiv);
+            } else {
+                contentDiv.appendChild(roleDiv);
+            }
+
             const textDiv = document.createElement('div');
             textDiv.className = 'message-text';
-            textDiv.innerHTML = formatMessage(content);
+            textDiv.innerHTML = formatMessage(displayContent);
 
-            contentDiv.appendChild(roleDiv);
             contentDiv.appendChild(textDiv);
             messageDiv.appendChild(avatar);
             messageDiv.appendChild(contentDiv);
@@ -2004,7 +2429,7 @@ pre code {
             const copyBtn = document.createElement('button');
             copyBtn.className = 'message-action-btn';
             copyBtn.title = 'Copy';
-            copyBtn.innerHTML = '📋';
+            copyBtn.innerHTML = 'C';
             copyBtn.addEventListener('click', () => handleCopyMessage(content));
             actionsDiv.appendChild(copyBtn);
 
@@ -2013,19 +2438,9 @@ pre code {
                 const regenBtn = document.createElement('button');
                 regenBtn.className = 'message-action-btn';
                 regenBtn.title = 'Regenerate';
-                regenBtn.innerHTML = '🔄';
+                regenBtn.innerHTML = '↻';
                 regenBtn.addEventListener('click', () => handleRegenerateMessage(messageDiv));
                 actionsDiv.appendChild(regenBtn);
-            }
-
-            // Edit button (user messages only)
-            if (role === 'user') {
-                const editBtn = document.createElement('button');
-                editBtn.className = 'message-action-btn';
-                editBtn.title = 'Edit';
-                editBtn.innerHTML = '✏️';
-                editBtn.addEventListener('click', () => handleEditMessage(messageDiv));
-                actionsDiv.appendChild(editBtn);
             }
 
             messageDiv.appendChild(actionsDiv);
@@ -2059,6 +2474,11 @@ pre code {
         }
 
         function showTypingIndicator() {
+            // Don't show typing indicator if hideThinking is enabled
+            if (appState.hideThinking) {
+                return;
+            }
+
             const indicator = document.createElement('div');
             indicator.id = 'typingIndicator';
             indicator.className = 'message ai';
@@ -2080,9 +2500,9 @@ pre code {
             if (indicator) indicator.remove();
         }
 
-        // ============================================
+        // ============================================ 
         // MESSAGE ACTIONS
-        // ============================================
+        // ============================================ 
 
         function handleCopyMessage(content) {
             navigator.clipboard.writeText(content).then(() => {
@@ -2165,13 +2585,84 @@ pre code {
 
         function handleEditTitle() {
             const currentTitle = elements.chatTitle.textContent;
-            const newTitle = prompt('Rename chat:', currentTitle);
 
-            if (newTitle && newTitle.trim()) {
-                elements.chatTitle.textContent = newTitle.trim();
-                saveState();
-                showSuccess('Chat renamed');
+            // Create input field
+            const input = document.createElement('input');
+            input.type = 'text';
+            input.className = 'chat-title-edit';
+            input.value = currentTitle;
+
+            // Replace title with input
+            elements.chatTitle.replaceWith(input);
+            input.id = 'chatTitle';
+            input.focus();
+            input.select();
+
+            // Update reference
+            elements.chatTitle = input;
+
+            function saveTitle() {
+                const newTitle = input.value.trim();
+                if (newTitle) {
+                    // Create new title element
+                    const newTitle_elem = document.createElement('h1');
+                    newTitle_elem.className = 'chat-title';
+                    newTitle_elem.id = 'chatTitle';
+                    newTitle_elem.style.flex = '1';
+                    newTitle_elem.textContent = newTitle;
+
+                    input.replaceWith(newTitle_elem);
+                    elements.chatTitle = newTitle_elem;
+
+                    // Add click listener to new title
+                    elements.chatTitle.addEventListener('click', handleEditTitle);
+
+                    // Update saved chat if one is currently loaded
+                    if (appState.currentLoadedChatId) {
+                        const chatIndex = appState.savedChats.findIndex(c => c.id === appState.currentLoadedChatId);
+                        if (chatIndex !== -1) {
+                            appState.savedChats[chatIndex].title = newTitle;
+                            renderSavedChats();
+                        }
+                    }
+
+                    saveState();
+                    showSuccess('Chat renamed');
+                } else {
+                    // Revert if empty
+                    const newTitle_elem = document.createElement('h1');
+                    newTitle_elem.className = 'chat-title';
+                    newTitle_elem.id = 'chatTitle';
+                    newTitle_elem.style.flex = '1';
+                    newTitle_elem.textContent = currentTitle;
+
+                    input.replaceWith(newTitle_elem);
+                    elements.chatTitle = newTitle_elem;
+                    elements.chatTitle.addEventListener('click', handleEditTitle);
+                }
             }
+
+            // Save on Enter
+            input.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    saveTitle();
+                }
+                if (e.key === 'Escape') {
+                    // Revert on Escape
+                    const newTitle_elem = document.createElement('h1');
+                    newTitle_elem.className = 'chat-title';
+                    newTitle_elem.id = 'chatTitle';
+                    newTitle_elem.style.flex = '1';
+                    newTitle_elem.textContent = currentTitle;
+
+                    input.replaceWith(newTitle_elem);
+                    elements.chatTitle = newTitle_elem;
+                    elements.chatTitle.addEventListener('click', handleEditTitle);
+                }
+            });
+
+            // Save on blur
+            input.addEventListener('blur', saveTitle);
         }
 
         function handleEditMessage(messageDiv) {
@@ -2229,7 +2720,41 @@ pre code {
 
             saveState();
             renderSavedChats();
-            showSuccess(`Saved: "${chatTitle.substring(0, 30)}..."`);
+            showSuccess(`Saved: "${chatTitle.substring(0, 30)}"...`);
+        }
+
+        function handleRenameSavedChat(chatId) {
+            const chat = appState.savedChats.find(c => c.id === chatId);
+            if (!chat) return;
+
+            const newTitle = prompt('Rename chat:', chat.title);
+            if (newTitle && newTitle.trim()) {
+                chat.title = newTitle.trim();
+                saveState();
+                renderSavedChats();
+                showSuccess('Chat renamed');
+            }
+        }
+
+        function handleDeleteSavedChat(chatId) {
+            if (confirm('Delete this chat? This cannot be undone.')) {
+                appState.savedChats = appState.savedChats.filter(c => c.id !== chatId);
+
+                // If we're deleting the currently loaded chat, clear it
+                if (appState.currentLoadedChatId === chatId) {
+                    appState.currentLoadedChatId = null;
+                }
+
+                saveState();
+                renderSavedChats();
+                showSuccess('Chat deleted');
+            }
+        }
+
+        function handleExportChat(chat) {
+            const content = `Chat: ${chat.title}\nModel: ${chat.model}\nDate: ${new Date(chat.timestamp).toLocaleString()}\n\n${'='.repeat(50)}\n\n${chat.messages.map(msg => `${msg.role.toUpperCase()}: ${msg.content}`).join('\n\n')}`;
+            downloadFile(content, `${chat.title.replace(/\s+/g, '_')}.txt`, 'text/plain');
+            showSuccess('Chat exported');
         }
 
         function renderSavedChats() {
@@ -2243,6 +2768,13 @@ pre code {
                 const chatItem = document.createElement('div');
                 chatItem.className = 'chat-item';
                 chatItem.dataset.chatId = chat.id;
+
+                const contentWrapper = document.createElement('div');
+                contentWrapper.style.flex = '1';
+                contentWrapper.style.minWidth = '0';
+                contentWrapper.style.display = 'flex';
+                contentWrapper.style.flexDirection = 'column';
+                contentWrapper.style.gap = '2px';
 
                 const title = document.createElement('div');
                 title.className = 'chat-item-title';
@@ -2259,8 +2791,46 @@ pre code {
                 const date = new Date(chat.timestamp).toLocaleDateString();
                 meta.textContent = `${chat.model} • ${date}`;
 
-                chatItem.appendChild(title);
-                chatItem.appendChild(meta);
+                contentWrapper.appendChild(title);
+                contentWrapper.appendChild(meta);
+
+                // Action buttons
+                const actionsDiv = document.createElement('div');
+                actionsDiv.className = 'chat-item-actions';
+
+                const renameBtn = document.createElement('button');
+                renameBtn.className = 'chat-item-action-btn';
+                renameBtn.innerHTML = '✏️';
+                renameBtn.title = 'Rename';
+                renameBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    handleRenameSavedChat(chat.id);
+                });
+
+                const exportBtn = document.createElement('button');
+                exportBtn.className = 'chat-item-action-btn';
+                exportBtn.innerHTML = '💾';
+                exportBtn.title = 'Export';
+                exportBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    handleExportChat(chat);
+                });
+
+                const deleteBtn = document.createElement('button');
+                deleteBtn.className = 'chat-item-action-btn delete';
+                deleteBtn.innerHTML = '🗑️';
+                deleteBtn.title = 'Delete';
+                deleteBtn.addEventListener('click', (e) => {
+                    e.stopPropagation();
+                    handleDeleteSavedChat(chat.id);
+                });
+
+                actionsDiv.appendChild(renameBtn);
+                actionsDiv.appendChild(exportBtn);
+                actionsDiv.appendChild(deleteBtn);
+
+                chatItem.appendChild(contentWrapper);
+                chatItem.appendChild(actionsDiv);
 
                 chatItem.addEventListener('click', () => loadSavedChat(chat.id));
                 historyContainer.appendChild(chatItem);
@@ -2278,6 +2848,7 @@ pre code {
             appState.currentModel = chat.model;
             appState.systemPrompt = chat.systemPrompt;
             Object.assign(appState.params, chat.params);
+            appState.currentLoadedChatId = chatId; // Track which chat is loaded
 
             elements.modelSelect.value = chat.model;
             elements.systemPromptInput.value = chat.systemPrompt;
@@ -2304,15 +2875,16 @@ pre code {
             }
 
             appState.conversationHistory = [];
+            appState.currentLoadedChatId = null; // Clear the loaded chat reference
             elements.chatMessages.innerHTML = '';
             elements.chatTitle.textContent = 'Charlie Llama Chat';
             elements.tokenCounter.textContent = 'Ready';
             saveState();
         }
 
-        // ============================================
+        // ============================================ 
         // SYSTEM PROMPT
-        // ============================================
+        // ============================================ 
 
         function toggleSystemPrompt() {
             elements.systemPromptToggle.classList.toggle('active');
@@ -2343,9 +2915,9 @@ pre code {
             }
         }
 
-        // ============================================
+        // ============================================ 
         // SETTINGS & PARAMETERS
-        // ============================================
+        // ============================================ 
 
         function setupParameterSliders() {
             const sliders = document.querySelectorAll('.param-slider');
@@ -2358,7 +2930,13 @@ pre code {
                     // Update display
                     if (param === 'font_size') {
                         document.getElementById('fontSizeValue').textContent = value + 'px';
-                        document.documentElement.style.fontSize = value + 'px';
+                        // Only affect message text, not entire UI
+                        const style = document.getElementById('messageFontStyle') || document.createElement('style');
+                        if (!document.getElementById('messageFontStyle')) {
+                            style.id = 'messageFontStyle';
+                            document.head.appendChild(style);
+                        }
+                        style.textContent = `.message-text { font-size: ${value}px !important; }`;
                     } else if (param === 'temperature') {
                         document.getElementById('tempValue').textContent = value;
                         appState.params.temperature = parseFloat(value);
@@ -2386,9 +2964,13 @@ pre code {
             elements.settingsModal.classList.remove('active');
         }
 
+        function closeExportMenu() {
+            // Placeholder for export menu close
+        }
+
         // ============================================
         // EXPORT FUNCTIONS
-        // ============================================
+        // ============================================ 
 
         function downloadFile(content, filename, type) {
             const blob = new Blob([content], { type });
@@ -2402,35 +2984,52 @@ pre code {
             URL.revokeObjectURL(url);
         }
 
-        // ============================================
-        // THEME
-        // ============================================
+                // ============================================
+                // THEME
+                // ============================================
+        
+                function setTheme(theme) {
+                    document.body.setAttribute('data-theme', theme);
+                    appState.theme = theme;
+                    elements.themeSelect.value = theme;
+                    saveState();
+                }
 
-        function toggleTheme() {
-            const body = document.body;
-            const currentTheme = body.getAttribute('data-theme');
-            const newTheme = currentTheme === 'light' ? 'dark' : 'light';
+                function toggleDarkLightMode() {
+                    const currentTheme = appState.theme;
+                    let newTheme = currentTheme;
 
-            body.setAttribute('data-theme', newTheme);
-            appState.theme = newTheme;
+                    // Toggle between light and dark variants of the same theme
+                    if (currentTheme.includes('-light')) {
+                        newTheme = currentTheme.replace('-light', '-dark');
+                    } else if (currentTheme.includes('-dark')) {
+                        newTheme = currentTheme.replace('-dark', '-light');
+                    } else if (currentTheme === 'light') {
+                        newTheme = 'dark';
+                    } else if (currentTheme === 'dark') {
+                        newTheme = 'light';
+                    }
 
-            const icon = document.getElementById('themeIcon');
-            const text = document.getElementById('themeText');
+                    setTheme(newTheme);
+                }
 
-            if (newTheme === 'dark') {
-                icon.textContent = '☀️';
-                text.textContent = 'Light Mode';
-            } else {
-                icon.textContent = '🌙';
-                text.textContent = 'Dark Mode';
-            }
+                function toggleSidebar() {
+                    appState.sidebarOpen = !appState.sidebarOpen;
 
-            saveState();
-        }
+                    if (appState.sidebarOpen) {
+                        elements.sidebar.classList.remove('collapsed');
+                        elements.container.classList.remove('sidebar-closed');
+                    } else {
+                        elements.sidebar.classList.add('collapsed');
+                        elements.container.classList.add('sidebar-closed');
+                    }
 
-        // ============================================
+                    saveState();
+                }
+
+                // ============================================
         // UTILITIES
-        // ============================================
+        // ============================================ 
 
         function autoResizeTextarea() {
             elements.chatInput.addEventListener('input', function() {
@@ -2461,9 +3060,9 @@ pre code {
             }, 3000);
         }
 
-        // ============================================
+        // ============================================ 
         // STATE PERSISTENCE
-        // ============================================
+        // ============================================ 
 
         function saveState() {
             try {
@@ -2484,13 +3083,7 @@ pre code {
                     document.body.setAttribute('data-theme', appState.theme);
                     elements.systemPromptInput.value = appState.systemPrompt;
 
-                    // Update theme toggle
-                    const icon = document.getElementById('themeIcon');
-                    const text = document.getElementById('themeText');
-                    if (appState.theme === 'dark') {
-                        icon.textContent = '☀️';
-                        text.textContent = 'Light Mode';
-                    }
+                    setTheme(appState.theme);
 
                     // Restore parameters
                     Object.keys(appState.params).forEach(key => {
@@ -2499,6 +3092,32 @@ pre code {
                             slider.value = appState.params[key];
                         }
                     });
+
+                    // Restore font size for message text
+                    const fontSizeSlider = document.getElementById('font_size');
+                    if (fontSizeSlider) {
+                        const fontSize = fontSizeSlider.value;
+                        const style = document.createElement('style');
+                        style.id = 'messageFontStyle';
+                        style.textContent = `.message-text { font-size: ${fontSize}px !important; }`;
+                        document.head.appendChild(style);
+                    }
+
+                    // Restore sidebar state
+                    if (!appState.sidebarOpen) {
+                        elements.sidebar.classList.add('collapsed');
+                        elements.container.classList.add('sidebar-closed');
+                    }
+
+                    // Restore hide thinking setting
+                    if (elements.hideThinkingCheckbox) {
+                        elements.hideThinkingCheckbox.checked = appState.hideThinking;
+                    }
+
+                    // Restore chain of thought collapse setting
+                    if (elements.collapseChainOfThoughtCheckbox) {
+                        elements.collapseChainOfThoughtCheckbox.checked = appState.collapseChainOfThought;
+                    }
 
                     // Restore messages
                     appState.conversationHistory.forEach(msg => {
@@ -2509,15 +3128,20 @@ pre code {
 
                     // Render saved chats in sidebar
                     renderSavedChats();
+
+                    // Re-attach click listener to chat title
+                    if (elements.chatTitle) {
+                        elements.chatTitle.addEventListener('click', handleEditTitle);
+                    }
                 }
             } catch (error) {
                 console.error('Failed to load state:', error);
             }
         }
 
-        // ============================================
+        // ============================================ 
         // KEYBOARD SHORTCUTS
-        // ============================================
+        // ============================================ 
 
         function handleKeyboardShortcuts(e) {
             // Ctrl/Cmd + K = Focus input
@@ -2544,30 +3168,30 @@ pre code {
                 closeExportMenu();
             }
 
-            // Ctrl/Cmd + = or + to increase font size
+            // Ctrl/Cmd + = or + to increase font size (message text only)
             if ((e.ctrlKey || e.metaKey) && (e.key === '=' || e.key === '+')) {
                 e.preventDefault();
-                const currentSize = parseFloat(getComputedStyle(document.documentElement).fontSize);
+                const fontSizeSlider = document.getElementById('font_size');
+                const currentSize = parseFloat(fontSizeSlider.value);
                 const newSize = Math.min(currentSize + 1, 20);
-                document.documentElement.style.fontSize = newSize + 'px';
-                document.getElementById('font_size').value = newSize;
-                document.getElementById('fontSizeValue').textContent = newSize + 'px';
+                fontSizeSlider.value = newSize;
+                fontSizeSlider.dispatchEvent(new Event('input'));
             }
 
-            // Ctrl/Cmd + - to decrease font size
+            // Ctrl/Cmd + - to decrease font size (message text only)
             if ((e.ctrlKey || e.metaKey) && e.key === '-') {
                 e.preventDefault();
-                const currentSize = parseFloat(getComputedStyle(document.documentElement).fontSize);
+                const fontSizeSlider = document.getElementById('font_size');
+                const currentSize = parseFloat(fontSizeSlider.value);
                 const newSize = Math.max(currentSize - 1, 12);
-                document.documentElement.style.fontSize = newSize + 'px';
-                document.getElementById('font_size').value = newSize;
-                document.getElementById('fontSizeValue').textContent = newSize + 'px';
+                fontSizeSlider.value = newSize;
+                fontSizeSlider.dispatchEvent(new Event('input'));
             }
         }
 
-        // ============================================
+        // ============================================ 
         // START APP
-        // ============================================
+        // ============================================ 
 
         document.addEventListener('DOMContentLoaded', init);
 
